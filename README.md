@@ -5,7 +5,7 @@ To generate the database used with this server use ```python3 -m yql_x_server.ge
 The database is used for WOEID mapping as Yahoo's servers are gone.
 
 ## Running
-Just run ```python3 -m yql_x_server``` and point your weather client to your IP:5002.
+Just run ```python3 -m yql_x_server``` and point your weather client to your IP:8000
 
 Beware, geoDatabase.json is typically around 200MB and it is loaded into RAM for performance reasons!
 
