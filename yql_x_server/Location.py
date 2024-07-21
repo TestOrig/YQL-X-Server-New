@@ -35,12 +35,13 @@ class SearchLocation:
         else:
             self.country = countries.get(metadata["iso"])
 
+        self.country_name = self.country.name
         self.location_id = "ASXX0075"
         self.name = metadata['name']
         self.woeid = metadata['woeid']
 
 class Location:
-    def __init__(self, yql: YQL, latlong=None, city_name=None):
+    def __init__(self, yql: YQL, latlong=None, city_name=None, woeid=None):
         if not latlong and not city_name:
             raise ValueError("At least one of latlong or city_name must be provided.")
 
@@ -59,11 +60,15 @@ class Location:
             self.latitude = latlong[0]
             self.longitude = latlong[1]
 
-        self.woeid = yql.getWoeidFromName(self.city)
+        if woeid:
+            self.woeid = woeid
+        else:
+            self.woeid = yql.getWoeidFromName(self.city)
         weather = getWeather(self.latitude, self.longitude, self.woeid)
 
         self.barometer = weather['current']['pressure']
         self.currently_condition_code = weatherIcon(weather['current']['weather'][0]['id'], weather["current"]["dt"], weather['current']['sunset'])
+        self.currently_condition_text = weather['current']['weather'][0]['description']
         currTime = weatherDate(weather["current"]["dt"], weather["timezone_offset"])
         self.current_time_24h = format_time_str(currTime)
         self.current_time_12h = format_time_str(self.current_time_24h, is_12h=True)
@@ -83,6 +88,7 @@ class Location:
         self.sunset_12h = format_time_str(self.sunset_24h, is_12h=True)
 
         self.temp = weather['current']['temp']
+        self.temp_rounded = round(self.temp)
         self.timezone = format_timezone(weather["timezone_offset"])
         self.visibility = weather['current']['visibility'] / 1000
         self.wind_chill = weather['current']['feels_like']
@@ -103,8 +109,11 @@ class Day:
         self.ordinal = idx
 
         self.currently_condition_code = weatherIcon(weather['daily'][idx]['weather'][0]['id'], weather["daily"][idx]["dt"], weather['daily'][idx]['sunset'])
+        self.currently_condition_text = weather['daily'][idx]['weather'][0]['description']
         self.high = weather['daily'][idx]['temp']['max']
+        self.high_rounded = round(self.high)
         self.low = weather['daily'][idx]['temp']['min']
+        self.low_rounded = round(self.low)
         self.pop = weatherPoP(weather['daily'][idx]['pop'])
 
 class Hour:

@@ -184,3 +184,6 @@ def moonPhase(phase):
     # Waxing Crescent
     if 0 <= phase <= 0.25:
         return [32, 1]
+
+def parseWeatherXML(xml):
+    pass

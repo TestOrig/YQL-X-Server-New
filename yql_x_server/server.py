@@ -7,9 +7,9 @@ from fastapi import FastAPI, APIRouter, Response, Request
 from fastapi.responses import PlainTextResponse
 import uvicorn
 from yql_x_server.YQL import YQL
-from yql_x_server.StocksQParser import *
-from yql_x_server.XMLFactory import XMLFactoryYQL
+from yql_x_server.XMLFactory import XMLStocksFactoryDGW, XMLWeatherFactoryYQL, XMLWeatherFactoryDGW
 from yql_x_server.args import args
+import requests
 
 app = FastAPI()
 sys.stdout.reconfigure(encoding='utf-8')
@@ -21,57 +21,46 @@ if not os.path.exists(genPath):
         database.close()
 
 yql = YQL()
-
 yql_router = APIRouter()
 dgw_router = APIRouter()
 
-# Stocks
 @dgw_router.get('/dgw')
-async def dgw():
-    print("Legacy app found!")
+async def dgw_get():
     return Response("ok")
 
-@dgw_router.post('/dgw')
+@dgw_router.post('/dgw', response_class=PlainTextResponse)
 async def dgw(request: Request):
-    body = await request.body()
+    body = (await request.body()).decode()
     root = ElementTree.fromstring(body)
-    type = root[0].attrib['type']
     api = root.attrib['api']
     if api == "finance":
-        q = parseQuery(body)
-        return XMLGenerator.getStocksXMLWithQandType(q, type)
-    if api == "finance":
-        print("Using finance")
-        q = parseQuery(body)
-        return XMLGenerator.getStocksXMLWithQandType(q, type)
+        reqType = root[0].attrib['type']
+        return XMLStocksFactoryDGW(root, reqType)
     elif api == 'weather':
-        print("Using Weather")
-        return legacyWeatherDGW(request)
+        reqType = root[0].attrib['id']
+        if reqType == "3":
+            q = root[0][0].text
+            return XMLWeatherFactoryDGW(q, yql, Search=True)
+        if reqType == "30":
+            return XMLWeatherFactoryDGW(root, yql)
 
-# Weather
-
-# iOS 5 seems to use this endpoint, let's redirect to the regular function
 @yql_router.get('/v1/yql')
 def legacyWeatherYQL(request: Request): 
-    print("Legacy app found!")
     return weatherEndpoint(request)
 
 @yql_router.post('/yql/weather/dgw')
 async def legacyWeatherDGW(request: Request):
-    print("Legacy app found!")
-    print("To be implmeneted")
-    return Response("ok")
+    return dgw(request)
 
-# iOS 6 contacts this endpoint for all things weather
 @yql_router.get('/yql/weather', response_class=PlainTextResponse)
 async def weatherEndpoint(request: Request):
     q = request.query_params.get('q')
     if q:
         if 'partner.weather.locations' and not 'yql.query.multi' in q:
             q = q[q.index('query="')+7:q.index('" a')]
-            return XMLFactoryYQL(q, yql, Search=True)
+            return XMLWeatherFactoryYQL(q, yql, Search=True)
         elif 'partner.weather.forecasts' in q:
-            return XMLFactoryYQL(q, yql)
+            return XMLWeatherFactoryYQL(q, yql)
     return Response("Invalid Request", status_code=400)
 
 def start():

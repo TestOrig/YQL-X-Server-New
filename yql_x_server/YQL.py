@@ -18,10 +18,15 @@ class YQL:
         self.json_file = json.load(self.json_mem_file)
         self.generatedFileLock = threading.Lock()
 
-    def getWoeidsInQuery(self, q, formatted=False):
+    def getWoeidsInQuery(self, q, formatted=False, Legacy=True):
         if formatted:
             return [q] if not isinstance(q, list) else q
         woeids = []
+        if Legacy:
+            # It's an XML document
+            for item in q.iter("id"):
+                woeids.append(item.text)
+            return woeids
         for woeid in re.findall(r'\b\d+\b', q):
             if not woeid in woeids:
                 woeids.append(woeid)
@@ -40,7 +45,7 @@ class YQL:
             # Generate woeid from name, store the characters in unicode int format for decoding later
             print("Generating woeid from name, " + name)
             with self.generatedFileLock:
-                generatedFile = open("generatedWoeids.json", "r+")
+                generatedFile = open(Path(args.generated_woeids_path), "r+")
                 generatedWoeids = json.load(generatedFile)
                 woeid = ""
                 woeidArray = []
@@ -59,27 +64,39 @@ class YQL:
                 generatedFile.close()
                 return woeid
 
-    def getNamesForWoeidsInQ(self, q, formatted=False, nameInQuery=False):
+    def getNamesForWoeids(self, woeids):
         names = []
-        if not nameInQuery:
-            woeids = self.getWoeidsInQuery(q, formatted)
-        else:
-            return [q[q.find("query='")+7:q.find(", ")]]
-        try:
-            for woeid in woeids:
+        
+        for woeid in woeids:
+            try:
                 names.append(self.json_file["woeid"][woeid])
-        except Exception as e:
-            generatedFile = open(Path(args.generated_woeids_path), "r")
-            generatedWoeids = json.load(generatedFile)
-            if not generatedWoeids:
-                return []
-            for woeid in woeids:
+            except Exception as e:
+                generatedFile = open(Path(args.generated_woeids_path), "r")
+                generatedWoeids = json.load(generatedFile)
+                if not generatedWoeids:
+                    continue
                 name = ""
                 for unicodeChar in generatedWoeids[woeid]:
                     name += chr(int(unicodeChar))
                 names.append(name)
         return names
-       
+
+    def getNamesForWoeidsInQ(self, q, formatted=False, nameInQuery=False, Legacy=False):
+        if Legacy:
+            woeids = []
+            # It's an XML document
+            for item in q.iter("id"):
+                if "|" in item.text:
+                    woeids.append(item.text.split("|")[1])
+                else:
+                    woeids.append(item.text)
+            return self.getNamesForWoeids(woeids)
+        if not nameInQuery:
+            woeids = self.getWoeidsInQuery(q, formatted)
+            return self.getNamesForWoeids(woeids)
+        else:
+            return [q[q.find("query='")+7:q.find(", ")]]
+
     def getSimilarName(self, q):
         resultsList = []
         for i in self.json_file["small"].items():

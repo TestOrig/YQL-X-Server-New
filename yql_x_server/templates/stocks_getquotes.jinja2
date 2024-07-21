@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+    <result type="{{type}}" timestamp="{{timestamp}}">
+        <list count="{{count}}" total="{{count}}">
+            {% for symbol in symbols %}
+            <quote>
+                <symbol>{{symbol.name}}</symbol>
+                <sname>{{symbol.name_short}}</sname>
+                <open>{{symbol.open}}</open>
+                <price>{{symbol.price}}</price>
+                <change>{{symbol.change}}</change>
+                <realtimechange>{{symbol.real_time_change}}</realtimechange>
+                <changepercent>{{symbol.change_percent}}</changepercent>
+                <marketcap>{{symbol.market_cap}}</marketcap>
+                <high>{{symbol.high}}</high>
+                <low>{{symbol.low}}</low>
+                <volume>{{symbol.volume}}</volume>
+                <averagedailyvolume>{{symbol.average_volume}}</averagedailyvolume>
+                <peratio>{{symbol.peratio}}</peratio>
+                <yearrange>{{symbol.yearrange}}</yearrange>
+                <dividendyield>{{symbol.dividend_yield}}</dividendyield>
+                <link>http://yzu.moe</link>
+                <status>0</status>
+            </quote>
+            {% endfor %}
+        </list>
+    </result>
+</response>

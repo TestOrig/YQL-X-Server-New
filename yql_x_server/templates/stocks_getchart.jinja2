@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+    <result type="{{type}}" timestamp="{{timestamp}}">
+        <list count="{{count}}" total="{{count}}">
+            <meta>
+                <symbol>{{symbol_name}}</symbol>
+                <marketopen>{{market_open}}</marketopen>
+                <marketclose>{{market_close}}</marketclose>
+                <gmtoffset>-4</gmtoffset>
+            </meta>
+            {% for point in points %}
+            <point timestamp="{{point.timestamp}}" close="{{point.close}}" volume="{{point.volume}}" />
+            {% endfor %}
+        </list>
+    </result>
+</response>

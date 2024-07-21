@@ -32,6 +32,7 @@ def getTickerInfoReal(tickerName):
         info["marketCap"] = 0
     if "dividendYield" not in info:
         info["dividendYield"] = 0
+    info["sanitizedSymbol"] = sanitizeSymbol(tickerName)
     if ticker not in cachedResponses:
         cachedResponses.update({tickerName: info})
     else:
@@ -116,3 +117,30 @@ def getTickerChartForRange(ticker, range):
     cachedChartResponses[cache_key] = {'data': out, 'timestamp': datetime.datetime.now().strftime("%h")}
 
     return out
+
+class Symbol:
+    def __init__(self, symbol):
+        self.name = symbol["sanitizedSymbol"]
+        self.incomplete = False
+        if symbol['noopen']:
+            self.incomplete = True
+        
+        if not self.incomplete:
+            if len(symbol['longName']) > 12:
+                self.name_short = symbol['longName'][:12] + '...'
+            else:
+                self.name_short = symbol['longName']
+            self.price = symbol['regularMarketOpen']
+            self.market_cap = symbol['marketCap']
+            self.volume = symbol['volume']
+            self.dividend_yield = symbol['dividendYield']
+            self.open = symbol['open']
+            self.previous_close = symbol['previousClose']
+            self.change = symbol['changepercent']
+            self.change_percent = symbol['changepercent']
+            self.real_time_change = symbol['changepercent']
+            self.high = symbol['regularMarketDayHigh']
+            self.low = symbol['regularMarketDayLow']
+            self.average_volume = symbol['averageVolume']
+            self.peratio = symbol['trailingPegRatio']
+            self.yearrange = 0

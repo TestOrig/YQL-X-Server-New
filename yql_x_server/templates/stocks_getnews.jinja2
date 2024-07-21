@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed>
+    <list count="{{count}}" total="{{count}}">
+        {% for post in posts %}
+        <item id="{{post["published"]}}">
+            <title>{{post["title"]}}</title>
+            <timestamp>{{post["published"]}}</timestamp>
+            <link>{{post["link"]}}</link>
+        </item>
+        {% endfor %}
+        <item id="0000">
+            <title>Powered by YQL-X-Server by Electimon!</title>
+            <timestamp>7695013355</timestamp>
+            <link>http://yzu.moe</link>
+        </item>
+    </list>
+</feed>
