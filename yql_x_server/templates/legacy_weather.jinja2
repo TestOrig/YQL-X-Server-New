@@ -9,7 +9,7 @@
 				<units temperature="C" />
 				<astronomy sunrise="{{location.sunrise_24h}}" sunset="{{location.sunset_24h}}" moonphase="{{location.moonphase}}" moonfacevisible="{{location.moonfacevisible}}%"/>
 				<condition text="{{location.currently_condition_text}}" code="{{location.currently_condition_code}}" temp="{{location.temp_rounded}}" time="{{location.current_time_24h}}" />
-				<link>{{yahoo_mobile_url}}</link>
+				<link>{{advert_link}}</link>
 				{% for day in location.days %}
 				<forecast dayofweek="{{day.ordinal}}" low="{{day.low_rounded}}" high="{{day.high_rounded}}" text="{{day.currently_condition_text}}" code="{{day.currently_condition_code}}" />
 				{% endfor %}

@@ -7,7 +7,7 @@ from yql_x_server.StocksQParser import parseStocksXML
 from yql_x_server.YQL import YQL
 from yql_x_server.Location import Location, SearchLocation
 from yql_x_server.Weather import getLatLongForQ
-from yql_x_server.args import module_dir
+from yql_x_server.args import module_dir, args
 from yql_x_server.Stocks import Symbol, getTickerChartForRange, getTickerInfo, sanitizeSymbol
 
 templates_path = Path(module_dir) / "templates"
@@ -112,9 +112,7 @@ def XMLWeatherFactoryYQL(q, yql: YQL, Legacy=False, Search=False):
     else:
         xml = modern_weather_template.render({
             "results": WeatherResultsFactory(q, yql, True if "lat=" in q else False),
-            "yahoo_mobile_url": "https://yzu.moe",
-            "twc_mobile_url": "https://yzu.moe",
-            "extended_forecast_url": "https://yzu.moe",
+            "advert_link": args.advert_link,
         })
     return format_xml(xml)
 
@@ -128,8 +126,6 @@ def XMLWeatherFactoryDGW(q, yql: YQL, Search=False):
         # It's regular weather
         xml = legacy_weather_template.render({
             "results": WeatherResultsFactory(q, yql, Legacy=True),
-            "yahoo_mobile_url": "http://yzu.moe",
-            "twc_mobile_url": "http://yzu.moe",
-            "extended_forecast_url": "http://yzu.moe",
+            "advert_link": args.advert_link,
         })
     return format_xml(xml)
