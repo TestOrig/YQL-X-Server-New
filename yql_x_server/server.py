@@ -21,14 +21,14 @@ if not os.path.exists(genPath):
         database.close()
 
 yql = YQL()
-yql_router = APIRouter()
-dgw_router = APIRouter()
+yql_router = APIRouter(default_response_class=PlainTextResponse)
+dgw_router = APIRouter(default_response_class=PlainTextResponse)
 
 @dgw_router.get('/dgw')
 async def dgw_get():
     return Response("ok")
 
-@dgw_router.post('/dgw', response_class=PlainTextResponse)
+@dgw_router.post('/dgw')
 async def dgw(request: Request):
     body = (await request.body()).decode()
     root = ElementTree.fromstring(body)
@@ -52,7 +52,7 @@ def legacyWeatherYQL(request: Request):
 async def legacyWeatherDGW(request: Request):
     return dgw(request)
 
-@yql_router.get('/yql/weather', response_class=PlainTextResponse)
+@yql_router.get('/yql/weather')
 async def weatherEndpoint(request: Request):
     q = request.query_params.get('q')
     if q:
