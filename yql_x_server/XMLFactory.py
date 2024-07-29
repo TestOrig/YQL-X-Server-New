@@ -41,9 +41,8 @@ def WeatherResultsFactory(q, yql: YQL, LatLongInQuery=False, Legacy=False):
                 latlong = getLatLongForQ(q)
                 results.append(Location(yql, latlong=latlong))
             else:
-                if Legacy:
-                    # Legacy cares about the woeid being the same as the the one in the query
-                    woeid = yql.getWoeidsInQuery(q, Legacy=True)[i]
+                # Legacy cares about the woeid being the same as the the one in the query
+                woeid = yql.getWoeidsInQuery(q, Legacy=Legacy)[i]
                 results.append(Location(yql, city_name=cities[i], woeid=woeid))
         return results
 
