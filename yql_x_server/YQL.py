@@ -18,7 +18,7 @@ class YQL:
         self.json_file = json.load(self.json_mem_file)
         self.generatedFileLock = threading.Lock()
 
-    def getWoeidsInQuery(self, q, formatted=False, Legacy=True):
+    def getWoeidsInQuery(self, q, formatted=False, Legacy=False):
         if formatted:
             return [q] if not isinstance(q, list) else q
         woeids = []
