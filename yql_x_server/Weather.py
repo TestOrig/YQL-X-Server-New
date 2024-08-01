@@ -38,7 +38,7 @@ def getWeather(lat, lng, woeid):
         if cachedResponse['timestamp'] == datetime.datetime.now().strftime("%Y-%m-%d %H"):
             print("Returning cached response")
             return cachedResponse['response']
-    uri = 'https://api.openweathermap.org/data/2.5/onecall'
+    uri = 'https://api.openweathermap.org/data/3.0/onecall'
     querystring = {"lat": lat, "lon": lng,
      "exclude": "alerts,minutely",
      "units": "metric",
