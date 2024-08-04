@@ -1,4 +1,5 @@
 from geopy.geocoders import Nominatim, GeoNames
+from yql_x_server.YzuGeocoder import YzuGeocoder
 
 class Geocoder:
     _shared_instance = None
@@ -10,6 +11,7 @@ class Geocoder:
   
     def __init__(self):
         self.geocoders = [
+            YzuGeocoder(),
             Nominatim(user_agent="iOSLegacyWeather", timeout=10),
             GeoNames("electimon")
         ]
@@ -20,8 +22,8 @@ class Geocoder:
                 location = geocoder.geocode(city)
                 if location:
                     return location.latitude, location.longitude
-            except:
-                continue
+            except Exception as e:
+                print(f"Failed to geocode {city} with {geocoder}, Error: {e}")
         return None, None
  
     def reverse_geocode(self, lat, long):
@@ -29,8 +31,8 @@ class Geocoder:
             try:
                 location = geocoder.reverse((lat, long)).raw
                 return location
-            except:
-                continue
+            except Exception as e:
+                print(f"Failed to reverse geocode {lat}, {long} with {geocoder}, Error: {e}")
         return None
 
 def getCity(location):
@@ -48,4 +50,6 @@ def getCity(location):
         return location['village']
     if "county" in location:
         return location['county']
+    if "name" in location:
+        return location['name']
     return None

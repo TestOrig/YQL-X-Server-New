@@ -54,6 +54,8 @@ class Location:
             self.longitude = latlong[1]
             location = Geocoder().reverse_geocode(self.latitude, self.longitude)
             self.city = getCity(location)
+            if "woeid" in location:
+                woeid = location["woeid"]
         else:
             self.city = city_name
             latlong = Geocoder().geocode(city_name)

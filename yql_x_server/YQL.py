@@ -1,24 +1,15 @@
 import json
-import mmap
-import os
 import re
 import threading
+import requests
 from pathlib import Path
 from yql_x_server.args import args
 
 class YQL:
     def __init__(self):
-        # Load json into memory
-        self.json_disk_file = open(Path(args.geo_database_path), "r")
-        if os.name == 'nt':
-            self.json_mem_file = mmap.mmap(self.json_disk_file.fileno(), 0, access=mmap.ACCESS_READ)
-        else:
-            self.json_mem_file = mmap.mmap(self.json_disk_file.fileno(), 0, prot=mmap.PROT_READ)
-        self.json_disk_file.close()
-        self.json_file = json.load(self.json_mem_file)
         self.generatedFileLock = threading.Lock()
 
-    def getWoeidsInQuery(self, q, formatted=False, Legacy=True):
+    def getWoeidsInQuery(self, q, formatted=False, Legacy=False):
         if formatted:
             return [q] if not isinstance(q, list) else q
         woeids = []
@@ -69,7 +60,11 @@ class YQL:
         
         for woeid in woeids:
             try:
-                names.append(self.json_file["woeid"][woeid])
+                r = requests.get(args.yzugeo_server + "/lookup/name", params={"woeid": woeid})
+                if r.status_code != 200:
+                    print(f"Failed to get name for {woeid}, yzugeo returned {r.status_code}")
+                    continue
+                names.append(r.json()["name"])
             except Exception as e:
                 generatedFile = open(Path(args.generated_woeids_path), "r")
                 generatedWoeids = json.load(generatedFile)
@@ -97,39 +92,14 @@ class YQL:
         else:
             return [q[q.find("query='")+7:q.find(", ")]]
 
-    def getSimilarName(self, q):
-        resultsList = []
-        for i in self.json_file["small"].items():
-            if q.lower() in i[0].lower():
-                resultsList.append({
-                    "name": i[0],
-                    "iso": self.json_file["small"][i[0]][1],
-                    "woeid": self.json_file["small"][i[0]][0],
-                    "type": "small"
-                })
-        for i in self.json_file["city"].items():
-            if q.lower() in i[0].lower() and not i[0] in resultsList:
-                resultsList.append({
-                    "name": i[0],
-                    "iso": self.json_file["city"][i[0]][1],
-                    "woeid": self.json_file["city"][i[0]][0],
-                    "type": "city"
-                })
-        for i in self.json_file["state"].items():
-            if q.lower() in i[0].lower() and not i[0] in resultsList:
-                resultsList.append({
-                    "name": i[0],
-                    "iso": self.json_file["state"][i[0]][1],
-                    "woeid": self.json_file["state"][i[0]][0],
-                    "type": "state"
-                })
-        for i in self.json_file["country"].items():
-            if q.lower() in i[0].lower() and not i[0] in resultsList:
-                resultsList.append({
-                    "name": i[0],
-                    "iso": self.json_file["country"][i[0]][1],
-                    "woeid": self.json_file["country"][i[0]][0],
-                    "type": "country"
-                })
-
-        return resultsList
+    def getSimilarName(self, name):
+        q = {
+            "query": name,
+            "limit": 10,
+            "alt_response": True,
+            "place_type_id": [12, 8, 7, 22]
+        }
+        _results = requests.post(args.yzugeo_server + "/lookup/places", json=q).json() 
+        results = [_results[key] for key in _results]
+        print(f"Got similar name for {name}: {results}")
+        return results
