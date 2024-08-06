@@ -66,5 +66,7 @@ def start():
     uvicorn.run(
         app,
         host=args.host,
-        port=args.port
+        port=args.port,
+        proxy_headers=True,
+        forwarded_allow_ips='*',
     )
