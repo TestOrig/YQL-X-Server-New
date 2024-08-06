@@ -41,7 +41,7 @@ class SearchLocation:
         self.woeid = metadata['woeid']
 
 class Location:
-    def __init__(self, yql: YQL, latlong=None, city_name=None, woeid=None):
+    def __init__(self, yql: YQL, latlong=None, city_name=None, woeid=None, lang=None):
         if not latlong and not city_name:
             raise ValueError("At least one of latlong or city_name must be provided.")
 
@@ -65,7 +65,7 @@ class Location:
         if woeid:
             self.woeid = woeid
         else:
-            self.woeid = yql.getWoeidFromName(self.city)
+            self.woeid = yql.getWoeidFromName(self.city, lang="en")
         weather = getWeather(self.latitude, self.longitude, self.woeid)
 
         self.barometer = weather['current']['pressure']

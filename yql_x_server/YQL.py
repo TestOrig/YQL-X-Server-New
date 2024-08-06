@@ -2,6 +2,8 @@ import json
 import re
 import threading
 import requests
+import html
+from langcodes import Language
 from pathlib import Path
 from yql_x_server.args import args
 
@@ -23,13 +25,13 @@ class YQL:
                 woeids.append(woeid)
         return woeids
     
-    def getWoeidFromName(self, name):
+    def getWoeidFromName(self, name, lang):
         if not name:
             print("Name is empty")
             return "000000"
         print("Getting woeid from name, " + name)
         try:
-            result = self.getSimilarName(name)[0]['woeid']
+            result = self.getSimilarName(name, lang)[0]['woeid']
             print("Woeid from name is " + result)
             return result
         except:
@@ -76,7 +78,7 @@ class YQL:
                 names.append(name)
         return names
 
-    def getNamesForWoeidsInQ(self, q, formatted=False, nameInQuery=False, Legacy=False):
+    def getNamesForWoeidsInQ(self, q, formatted=False, Legacy=False):
         if Legacy:
             woeids = []
             # It's an XML document
@@ -86,20 +88,41 @@ class YQL:
                 else:
                     woeids.append(item.text)
             return self.getNamesForWoeids(woeids)
-        if not nameInQuery:
-            woeids = self.getWoeidsInQuery(q, formatted)
-            return self.getNamesForWoeids(woeids)
-        else:
-            return [q[q.find("query='")+7:q.find(", ")]]
+        return self.getNamesForWoeids(q['woeids'])
 
-    def getSimilarName(self, name):
+    def getSimilarName(self, name, lang):
         q = {
             "query": name,
             "limit": 10,
             "alt_response": True,
-            "place_type_id": [12, 8, 7, 22]
+            "place_type_id": [12, 8, 7, 22, 9],
+            "language": Language.get(lang).to_alpha3().upper()
         }
-        _results = requests.post(args.yzugeo_server + "/lookup/places", json=q).json() 
+        print(json.dumps(q))
+        r = requests.post(args.yzugeo_server + "/lookup/places", data=json.dumps(q))
+        if r.status_code != 200:
+            print(f"Failed to get similar name for {name}, yzugeo returned {r.status_code}")
+            return []
+        _results = r.json()
         results = [_results[key] for key in _results]
         print(f"Got similar name for {name}: {results}")
         return results
+
+    def parseQuery(self, q):            
+        q = html.unescape(q)
+        result = {'lang': re.search(r"lang='([^']+)'", q).group(1)}
+        print(f"Parsing query: {q}")
+        if 'partner.weather.locations' and not 'yql.query.multi' in q:
+            result['term'] = re.search(r'query="([^"]+)"', q).group(1)
+            result['type'] = "search"
+        elif "lat=" in q and "lon=" in q:
+            result['lat'] = re.search(r'lat=(-?\d+\.\d+)', q).group(1)
+            result['lon'] = re.search(r'lon=(-?\d+\.\d+)', q).group(1)
+            result['type'] = "weather/latlon"
+        elif "woeid" in q:
+            result['woeids'] = re.findall(r'\(woeid=(\d+)\)', q)
+            result['type'] = "weather/woeid"
+        
+        return result
+
+        

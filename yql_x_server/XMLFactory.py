@@ -6,7 +6,6 @@ from yql_x_server.Blog import GetBlogPosts
 from yql_x_server.StocksQParser import parseStocksXML
 from yql_x_server.YQL import YQL
 from yql_x_server.Location import Location, SearchLocation
-from yql_x_server.Weather import getLatLongForQ
 from yql_x_server.args import module_dir, args
 from yql_x_server.Stocks import Symbol, getTickerChartForRange, getTickerInfo, sanitizeSymbol
 
@@ -25,30 +24,31 @@ def format_xml(xml):
 
 def WeatherResultsFactory(q, yql: YQL, LatLongInQuery=False, Legacy=False):
     if "limit 1" in q and LatLongInQuery:
-        latlong = getLatLongForQ(q)
-        return [Location(yql, latlong=latlong)]
+        return [Location(yql, latlong=(q['lat'], q['lon']))]
     elif "limit 1" in q:
         city = yql.getNamesForWoeidsInQ(q, nameInQuery=True)
         return [Location(yql, city_name=city[0])]
     elif LatLongInQuery:
-        latlong = getLatLongForQ(q)
-        return [Location(yql, latlong=latlong)]
+        return [Location(yql, latlong=(q['lat'], q['lon']))]
     else:
         results = []
         cities = yql.getNamesForWoeidsInQ(q, Legacy=Legacy)
         for i in range(len(cities)):
             if LatLongInQuery:
-                latlong = getLatLongForQ(q)
-                results.append(Location(yql, latlong=latlong))
+                results.append(Location(yql, latlong=(q["lat"], q["lon"])))
             else:
                 # Legacy cares about the woeid being the same as the the one in the query
-                woeid = yql.getWoeidsInQuery(q, Legacy=Legacy)[i]
-                results.append(Location(yql, city_name=cities[i], woeid=woeid))
+                if Legacy:
+                    pass # TODO
+                results.append(Location(yql, city_name=cities[i], woeid=q['woeids'][i]))
         return results
 
-def SearchResultsFactory(q, yql: YQL):
+def SearchResultsFactory(q, yql: YQL, Legacy=False):
     results = []
-    similarResults = yql.getSimilarName(q)
+    if Legacy:
+        similarResults = yql.getSimilarName(q[0], q[1])
+    else:
+        similarResults = yql.getSimilarName(q['term'], q['lang'])
     for similarResult in similarResults:
         results.append(SearchLocation(similarResult))
     return results
@@ -101,22 +101,20 @@ def XMLStocksFactoryDGW(q, reqType):
             return "Invalid request type"
     return format_xml(xml)
    
-def XMLWeatherFactoryYQL(q, yql: YQL, Legacy=False, Search=False):
-    if Search:
+def XMLWeatherFactoryYQL(q: dict, yql: YQL):
+    if q['type'] == "search":
         xml = modern_weather_search_template.render({
             "results": SearchResultsFactory(q, yql)
         })
-    elif Legacy:
-        xml = legacy_weather_template.render(location=WeatherResultsFactory(q, yql))
-    else:
+    elif "weather" in q['type']:
         xml = modern_weather_template.render({
-            "results": WeatherResultsFactory(q, yql, True if "lat=" in q else False),
+            "results": WeatherResultsFactory(q, yql, True if "latlon" in q['type'] else False),
             "advert_link": args.advert_link,
         })
     return format_xml(xml)
 
 # DGW is inherently legacy
-def XMLWeatherFactoryDGW(q, yql: YQL, Search=False):
+def XMLWeatherFactoryDGW(q: str, yql: YQL, Search=False):
     if Search: 
         xml = legacy_weather_search_template.render({
             "results": SearchResultsFactory(q, yql)

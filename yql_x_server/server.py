@@ -39,7 +39,7 @@ async def dgw(request: Request):
     elif api == 'weather':
         reqType = root[0].attrib['id']
         if reqType == "3":
-            q = root[0][0].text
+            q = (root[0][0].text, root[0][1].text)
             return XMLWeatherFactoryDGW(q, yql, Search=True)
         if reqType == "30":
             return XMLWeatherFactoryDGW(root, yql)
@@ -55,12 +55,9 @@ async def legacyWeatherDGW(request: Request):
 @yql_router.get('/yql/weather')
 async def weatherEndpoint(request: Request):
     q = request.query_params.get('q')
-    if q:
-        if 'partner.weather.locations' and not 'yql.query.multi' in q:
-            q = q[q.index('query="')+7:q.index('" a')]
-            return XMLWeatherFactoryYQL(q, yql, Search=True)
-        elif 'partner.weather.forecasts' in q:
-            return XMLWeatherFactoryYQL(q, yql)
+    if q and q.startswith("select"):
+        q = yql.parseQuery(q)
+        return XMLWeatherFactoryYQL(q, yql)
     return Response("Invalid Request", status_code=400)
 
 def start():

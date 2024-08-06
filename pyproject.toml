@@ -15,6 +15,7 @@ requests = "^2.32.3"
 yfinance = "^0.2.40"
 feedparser = "^6.0.11"
 fastapi = "^0.111.1"
+langcodes = "^3.4.0"
 
 
 [build-system]
