@@ -6,6 +6,7 @@ import html
 from langcodes import Language
 from pathlib import Path
 from yql_x_server.args import args
+from starlette_context import context
 
 class YQL:
     def __init__(self):
@@ -62,7 +63,11 @@ class YQL:
         
         for woeid in woeids:
             try:
-                r = requests.get(args.yzugeo_server + "/lookup/name", params={"woeid": woeid})
+                headers = {
+                    'User-Agent': 'YQL-X-Server',
+                    'X-Forwarded-For': context['client'].host
+                }
+                r = requests.get(args.yzugeo_server + "/lookup/name", params={"woeid": woeid}, headers=headers)
                 if r.status_code != 200:
                     print(f"Failed to get name for {woeid}, yzugeo returned {r.status_code}")
                     continue
@@ -78,7 +83,7 @@ class YQL:
                 names.append(name)
         return names
 
-    def getNamesForWoeidsInQ(self, q, formatted=False, Legacy=False):
+    def getNamesForWoeidsInQ(self, q, Legacy=False):
         if Legacy:
             woeids = []
             # It's an XML document
@@ -98,14 +103,17 @@ class YQL:
             "place_type_id": [12, 8, 7, 22, 9],
             "language": Language.get(lang).to_alpha3().upper()
         }
-        print(json.dumps(q))
-        r = requests.post(args.yzugeo_server + "/lookup/places", data=json.dumps(q))
+        headers = {
+            'User-Agent': 'YQL-X-Server',
+            'X-Forwarded-For': context['client'].host
+        }
+        r = requests.post(args.yzugeo_server + "/lookup/places", data=json.dumps(q), headers=headers)
         if r.status_code != 200:
             print(f"Failed to get similar name for {name}, yzugeo returned {r.status_code}")
             return []
         _results = r.json()
         results = [_results[key] for key in _results]
-        print(f"Got similar name for {name}: {results}")
+        print(f"Got similar name for {name}: {results}, len {len(results)}")
         return results
 
     def parseQuery(self, q):            
@@ -120,7 +128,7 @@ class YQL:
             result['lon'] = re.search(r'lon=(-?\d+\.\d+)', q).group(1)
             result['type'] = "weather/latlon"
         elif "woeid" in q:
-            result['woeids'] = re.findall(r'\(woeid=(\d+)\)', q)
+            result['woeids'] = list(set(re.findall(r'woeid=(\d+)', q)))
             result['type'] = "weather/woeid"
         
         return result

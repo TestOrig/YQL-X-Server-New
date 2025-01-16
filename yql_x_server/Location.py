@@ -67,7 +67,6 @@ class Location:
         else:
             self.woeid = yql.getWoeidFromName(self.city, lang="en")
         weather = getWeather(self.latitude, self.longitude, self.woeid)
-
         self.barometer = weather['current']['pressure']
         self.currently_condition_code = weatherIcon(weather['current']['weather'][0]['id'], weather["current"]["dt"], weather['current']['sunset'])
         self.currently_condition_text = weather['current']['weather'][0]['description']

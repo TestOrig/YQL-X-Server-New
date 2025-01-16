@@ -110,6 +110,7 @@ def XMLWeatherFactoryYQL(q: dict, yql: YQL):
         xml = modern_weather_template.render({
             "results": WeatherResultsFactory(q, yql, True if "latlon" in q['type'] else False),
             "advert_link": args.advert_link,
+            "extended_forecast_url": args.advert_link
         })
     return format_xml(xml)
 

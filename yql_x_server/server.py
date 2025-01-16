@@ -9,7 +9,9 @@ import uvicorn
 from yql_x_server.YQL import YQL
 from yql_x_server.XMLFactory import XMLStocksFactoryDGW, XMLWeatherFactoryYQL, XMLWeatherFactoryDGW
 from yql_x_server.args import args
-import requests
+
+from starlette_context.middleware import RawContextMiddleware
+from starlette_context import context
 
 app = FastAPI()
 sys.stdout.reconfigure(encoding='utf-8')
@@ -60,13 +62,19 @@ async def weatherEndpoint(request: Request):
         return XMLWeatherFactoryYQL(q, yql)
     return Response("Invalid Request", status_code=400)
 
+@app.middleware("http")
+def add_context(request: Request, call_next):
+    context['client'] = request.client
+    return call_next(request)
+
 def start():
     app.include_router(yql_router)
     app.include_router(dgw_router)
+    app.add_middleware(RawContextMiddleware)
     uvicorn.run(
         app,
         host=args.host,
         port=args.port,
         proxy_headers=True,
-        forwarded_allow_ips='*',
+        forwarded_allow_ips='*'
     )
