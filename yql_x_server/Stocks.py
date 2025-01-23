@@ -1,64 +1,73 @@
-import yfinance, datetime
+from datetime import datetime, timezone
 from urllib.parse import unquote
+from xml.sax.saxutils import escape
+import random
+import yfinance
 
 # Cache responses per hour so we don't abuse the API and also for performance reasons.
 cachedResponses = {}
 cachedChartResponses = {}
 
-def getTickerInfo(ticker):
-    if ticker in cachedResponses and cachedResponses[ticker]['timestamp'] == datetime.datetime.now().strftime("%h"):
+def get_ticker_info(ticker):
+    current_hour = datetime.now().strftime("%h")
+    is_cached = (
+        ticker in cachedResponses and
+        cachedResponses[ticker].get('timestamp') == current_hour
+    )
+    if is_cached:
         print(f"Returning cached response for ticker {ticker}")
         return cachedResponses[ticker]
     print(f"Getting real response for ticker {ticker}")
-    return getTickerInfoReal(ticker)
+    return get_ticker_info_real(ticker)
 
-def getTickerInfoReal(tickerName):
-    ticker = yfinance.Ticker(tickerName)
-    changes = getTickerChanges(ticker)
+def get_ticker_info_real(ticker_name):
+    ticker = yfinance.Ticker(ticker_name)
+    changes = get_ticker_changes(ticker)
     info = ticker.info
-    if not info:
+    if not info or len(info) < 2:
         return None
     info.update(changes)
-    info.update({"timestamp": datetime.datetime.now().strftime("%h")})
+    info.update({"timestamp": datetime.now().strftime("%h")})
     info["noopen"] = False
-    if "open" not in info:
-        if 'regularMarketOpen' not in info:
-            info["noopen"] = True
-        else:
-            info['open'] = info['regularMarketOpen']
-    if "volume" not in info:
-        info["volume"] = 0
-    if "marketCap" not in info:
-        info["marketCap"] = 0
-    if "dividendYield" not in info:
-        info["dividendYield"] = 0
-    info["sanitizedSymbol"] = sanitizeSymbol(tickerName)
-    if ticker not in cachedResponses:
-        cachedResponses.update({tickerName: info})
+    info["open"] = info.get("regularMarketOpen", 0)
+    if info["open"] == 0:
+        info["noopen"] = True
+    info["volume"] = info.get("volume", info.get('averageVolume', 0))
+    info["marketCap"] = info.get("marketCap", 0)
+    info["dividendYield"] = info.get("dividendYield", 0)
+    info["sanitizedSymbol"] = sanitize_symbol(ticker_name)
+    news = ticker.get_news()
+    info["news"] = [{
+        "title": newsItem["content"]["title"],
+        "link": newsItem["content"]["canonicalUrl"]["url"],
+        "published": int(
+            datetime.strptime(newsItem["content"]["pubDate"], "%Y-%m-%dT%H:%M:%SZ")
+            .replace(tzinfo=timezone.utc)
+            .timestamp()
+        )
+    } for newsItem in news]
+    info["newsCount"] = len(info["news"])
+    if ticker_name not in cachedResponses:
+        cachedResponses.update({ticker_name: info})
     else:
-        cachedResponses[ticker] = {tickerName: info}
+        cachedResponses[ticker_name] = info
     return info
 
-def getTickerChanges(ticker):
-    try:
-        # Check if 'regularMarketPreviousClose' and 'regularMarketPrice' are available
-        if 'previousClose' in ticker.info and 'currentPrice' in ticker.info:
-            previous_close = ticker.info['previousClose']
-            current_price = ticker.info['currentPrice']
+def get_ticker_changes(ticker):
+    if 'regularMarketOpen' in ticker.info and 'regularMarketPreviousClose' in ticker.info:
+        previous_close = ticker.info['regularMarketPreviousClose']
+        current_price = ticker.info['regularMarketOpen']
 
-            # Calculate the change and change percent
-            change = abs(round(previous_close - current_price, 2))
-            change_percent = calculateChange(previous_close, current_price)
-            print(f"Change: {change}, Change Percent: {change_percent}")
-            return {"change": change, "changepercent": change_percent}
-        else:
-            # Data not available, return default values
-            return {"change": 0, "changepercent": "0%"}
-    except Exception as e:
-        print(e)
-        return {"change": 0, "changepercent": "0%"}
+        # Calculate the change and change percent
+        change = abs(round(previous_close - current_price, 2))
+        change_percent = calculate_change(previous_close, current_price)
+        print(f"Change: {change}, Change Percent: {change_percent}")
+        return {"change": change, "changepercent": change_percent}
+    # Data not available, return default values
+    print(f"Data not available for ticker {ticker}")
+    return {"change": 0, "changepercent": "0%"}
 
-def calculateChange(current, previous):
+def calculate_change(current, previous):
     sign = "+"
 
     if current == previous:
@@ -70,43 +79,48 @@ def calculateChange(current, previous):
     except ZeroDivisionError:
         return "x%"
 
-def sanitizeSymbol(s):
-    return unquote(s)
+def sanitize_symbol(s):
+    return escape(unquote(s))
 
-def getTickerChartForRange(ticker, range):
+def get_ticker_chart_for_range(ticker, _range):
     # Generate a cache key based on ticker and range
-    cache_key = f"{ticker}_{range}"
+    cache_key = f"{ticker}_{_range}"
 
     # Check if the data is cached and still valid
-    if cache_key in cachedChartResponses and cachedChartResponses[cache_key]['timestamp'] == datetime.datetime.now().strftime("%h"):
-        print(f"Returning cached response for {ticker} - {range}")
+    if cache_key in cachedChartResponses and cachedChartResponses[cache_key]['timestamp'] == datetime.now().strftime("%h"):
+        print(f"Returning cached response for {ticker} - {_range}")
         return cachedChartResponses[cache_key]['data']
 
     # If not cached or cache has expired, fetch the data
-    match range:
+    match _range:
         case "1d":
             interval = "15m"
         case "5d":
-            interval = "1d"
+            _range = "5d"
+            interval = "15m"
         case "1m":
-            range = "1mo"
-            interval = "1h"
+            _range = "1mo"
+            interval = "1d"
         case "3m":
-            range = "3mo"
+            _range = "3mo"
             interval = "1d"
         case "6m":
-            range = "6mo"
+            _range = "6mo"
             interval = "1wk"
         case "1y":
             interval = "1wk"
         case "2y":
             interval = "1wk"
+        case "5y":
+            interval = "1wk"
+        case "10y":
+            interval = "1wk"
         case _:
-            print("Unknown range: " + range)
+            print("Unknown range: " + _range)
             return None
 
-    print("Interval = " + interval + " for range " + range)
-    data_dict = yfinance.Ticker(ticker).history(period=range, interval=interval).to_dict()
+    print("Interval = " + interval + " for range " + _range)
+    data_dict = yfinance.Ticker(ticker).history(period=_range, interval=interval).to_dict()
 
     # Create the output data
     out = [{"open": data_dict["Open"][key], "high": data_dict["High"][key], "low": data_dict["Low"][key],
@@ -114,7 +128,7 @@ def getTickerChartForRange(ticker, range):
            in data_dict["Open"].keys()]
 
     # Update the cache with the new data
-    cachedChartResponses[cache_key] = {'data': out, 'timestamp': datetime.datetime.now().strftime("%h")}
+    cachedChartResponses[cache_key] = {'data': out, 'timestamp': datetime.now().strftime("%h")}
 
     return out
 
@@ -130,17 +144,24 @@ class Symbol:
                 self.name_short = symbol['longName'][:12] + '...'
             else:
                 self.name_short = symbol['longName']
-            self.price = symbol['regularMarketOpen']
-            self.market_cap = symbol['marketCap']
-            self.volume = symbol['volume']
-            self.dividend_yield = symbol['dividendYield']
-            self.open = symbol['open']
-            self.previous_close = symbol['previousClose']
-            self.change = symbol['changepercent']
-            self.change_percent = symbol['changepercent']
-            self.real_time_change = symbol['changepercent']
-            self.high = symbol['regularMarketDayHigh']
-            self.low = symbol['regularMarketDayLow']
-            self.average_volume = symbol['averageVolume']
-            self.peratio = symbol['trailingPegRatio']
+            self.name_short = escape(self.name_short)
+            self.price = symbol['currentPrice'] if 'currentPrice' in symbol else symbol['regularMarketOpen']
+            self.market_cap = symbol.get('marketCap', 0)
+            self.volume = symbol.get('volume', 0)
+            self.dividend_yield = symbol.get('dividendYield', random.uniform(0.01, 0.3))
+            self.open = symbol.get('open', 0)
+            self.previous_close = symbol.get('previousClose', 0)
+            self.change = symbol.get('changepercent', 0)
+            self.change_percent = symbol.get('changepercent', 0)
+            self.real_time_change = symbol.get('changepercent', 0)
+            self.high = symbol.get('regularMarketDayHigh', 0)
+            self.low = symbol.get('regularMarketDayLow', 0)
+            self.average_volume = symbol.get('averageVolume', 0)
+            peratio = symbol.get('trailingPegRatio', 0)
+            if peratio == "None" or not peratio:
+                peratio = random.uniform(0.5, 1.8)
+            self.peratio = peratio
             self.yearrange = 0
+            self.yearrange = 0
+            self.news = symbol.get('news', [])
+            self.news_count = symbol.get('newsCount', 0)

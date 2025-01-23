@@ -18,7 +18,7 @@ dateTable = {
 }
 
 # Helper Functions
-def getLatLongForQ(q):
+def get_latlong_for_q(q):
     latIndex1 = q.index('lat=')+4
     latIndex2 = q.index(' and')
     longIndex1 = q.index('lon=')+4
@@ -30,26 +30,26 @@ def getLatLongForQ(q):
     print("longIndex1 = " + q)
     return [lat, long]
 
-def getWeather(lat, lng, woeid):
+def get_weather(lat, lng, woeid):
     # We will try to see if a cached response is in the cache, if so and the timestamp matches
     # we will return that instead of abusing the API :)
     if woeid in woeidCache:
-        cachedResponse = woeidCache[woeid]
-        if cachedResponse['timestamp'] == datetime.datetime.now().strftime("%Y-%m-%d %H"):
+        cached_response = woeidCache[woeid]
+        if cached_response['timestamp'] == datetime.datetime.now().strftime("%Y-%m-%d %H"):
             print("Returning cached response")
-            return cachedResponse['response']
+            return cached_response['response']
     uri = 'https://api.openweathermap.org/data/3.0/onecall'
     querystring = {"lat": lat, "lon": lng,
      "exclude": "alerts,minutely",
      "units": "metric",
      "appid": args.owm_key}
-    response = (requests.request("GET", uri, params=querystring)).json()
+    response = (requests.request("GET", uri, params=querystring, timeout=5)).json()
     if response:
-      woeidCache[woeid] = {
-          "response": response,
-          "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H")
-      }
-      return response
+        woeidCache[woeid] = {
+            "response": response,
+            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H")
+        }
+        return response
     # TODO, None handling lmao
     return None
 
@@ -79,87 +79,87 @@ def getWeather(lat, lng, woeid):
 # 46 = ice&snow
 # 48 =
 
-def weatherIcon(id, timestamp, sunset):
-    day = True if timestamp < sunset else False
-    id = str(id)
-    if id.startswith("2"):  # Thunderstorm
+def weather_icon(_id, timestamp, sunset):
+    day = timestamp < sunset
+    _id = str(_id)
+    if _id.startswith("2"):  # Thunderstorm
         return 0  # Lightning
-    if id.startswith("3"):  # Drizzle
+    if _id.startswith("3"):  # Drizzle
         return 9
-    if id.startswith("5"):  # Rain
-        if id == "500":  # Light rain
+    if _id.startswith("5"):  # Rain
+        if _id == "500":  # Light rain
             return 39 if day else 9
-        if id == "501":  # Moderate rain
+        if _id == "501":  # Moderate rain
             return 11
-        if id in ["502", "503", "504"]:  # Heavy intensity rain
+        if _id in ["502", "503", "504"]:  # Heavy intensity rain
             return 11
-        if id == "511":  # Freezing rain
+        if _id == "511":  # Freezing rain
             return 25
-        if id.startswith("52"):  # Shower rain
+        if _id.startswith("52"):  # Shower rain
             return 11
-    if id.startswith("6"):  # Snow
-        if id in ["600", "620"]:  # Light snow
+    if _id.startswith("6"):  # Snow
+        if _id in ["600", "620"]:  # Light snow
             return 13
-        if id in ["601", "621"]:  # Snow
+        if _id in ["601", "621"]:  # Snow
             return 15
-        if id in ["602", "622"]:  # Heavy snow
+        if _id in ["602", "622"]:  # Heavy snow
             return 46
-        if id in ["611", "612", "613"]:  # Sleet
+        if _id in ["611", "612", "613"]:  # Sleet
             return 6
-        if id == "615" or id == "616":  # Rain and snow
+        if _id in ['615', '616']:  # Rain and snow
             return 35
-    if id.startswith("7"):  # Atmosphere (Mist, Smoke, Haze, etc.)
-        if id == "781":  # Tornado
+    if _id.startswith("7"):  # Atmosphere (Mist, Smoke, Haze, etc.)
+        if _id == "781":  # Tornado
             return 0  # No specific icon for tornado, using lightning
         return 23  # Use the same icon for all misty conditions
-    if id.startswith("8"):  # Clear and clouds
-        if id == "800":  # Clear sky
+    if _id.startswith("8"):  # Clear and clouds
+        if _id == "800":  # Clear sky
             return 32 if day else 31
-        if id == "801":  # Few clouds
+        if _id == "801":  # Few clouds
             return 30 if day else 29
-        if id == "802":  # Scattered clouds
+        if _id == "802":  # Scattered clouds
             return 30 if day else 29
-        if id == "803" or id == "804":  # Broken clouds, overcast clouds
+        if _id in ['803', '804']:  # Broken clouds, overcast clouds
             return 27
     # Additional codes for extreme weather conditions can be added here with proper mappings
     # As an example, adding a few more:
-    if id.startswith("9"):  # Extreme
-        if id == "900" or id == "901" or id == "902" or id == "962":  # Tornado + hurricanes
+    if _id.startswith("9"):  # Extreme
+        if _id in ["900", "901", "902", "962"]: # Tornado + hurricanes
             return 0
-        if id == "903":  # Cold
+        if _id == "903":  # Cold
             return 25
-        if id == "904":  # Hot
+        if _id == "904":  # Hot
             return 19
-        if id == "905":  # Windy
+        if _id == "905":  # Windy
             return 23
-        if id == "906":  # Hail
+        if _id == "906":  # Hail
             return 17
     # Unknown or not assigned codes:
     return 48  # You can use this as a default 'unknown' code
 
-def weatherPoP(pop):
+def weather_poP(pop):
     return int(float(pop)*100)
 
-def weatherDate(dt, timezone_offset):
+def weather_date(dt, timezone_offset):
     currTime = time.gmtime(dt+timezone_offset)
     return f"{str(currTime.tm_hour)}:{str(currTime.tm_min)}"
 
 # My brain is big for the next 2 functions
-def dayNext(n):
-    return dateTable[(datetime.datetime.now() + datetime.timedelta(days=(n))).weekday()]
+def day_next(n):
+    return dateTable[(datetime.datetime.now() + datetime.timedelta(days=n)).weekday()]
 
-def dayArray():
+def day_array():
     return [
-        dayNext(1),
-        dayNext(2),
-        dayNext(3),
-        dayNext(4),
-        dayNext(5),
-        dayNext(6)
+        day_next(1),
+        day_next(2),
+        day_next(3),
+        day_next(4),
+        day_next(5),
+        day_next(6)
     ]
 
 # Mapping OWM moon phases
-def moonPhase(phase):
+def moon_phase(phase):
     # New Moon
     if phase in (0, 1):
         return [0, 0]
@@ -184,6 +184,3 @@ def moonPhase(phase):
     # Waxing Crescent
     if 0 <= phase <= 0.25:
         return [32, 1]
-
-def parseWeatherXML(xml):
-    pass

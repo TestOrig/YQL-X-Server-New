@@ -1,3 +1,4 @@
+import inspect
 from geopy.geocoders import Nominatim, GeoNames
 from yql_x_server.YzuGeocoder import YzuGeocoder
 
@@ -16,10 +17,14 @@ class Geocoder:
             GeoNames("electimon")
         ]
 
-    def geocode(self, city):
+    def geocode(self, city, country=None):
         for geocoder in self.geocoders:
             try:
-                location = geocoder.geocode(city)
+                args = inspect.signature(geocoder.geocode).parameters
+                if "country_codes" in args:
+                    location = geocoder.geocode(city, country_codes=[country])
+                else:
+                    location = geocoder.geocode(city, country=country)
                 if location:
                     return location.latitude, location.longitude
             except Exception as e:
@@ -35,7 +40,7 @@ class Geocoder:
                 print(f"Failed to reverse geocode {lat}, {long} with {geocoder}, Error: {e}")
         return None
 
-def getCity(location):
+def get_city(location):
     if "toponymName" in location:
         return location['toponymName']
     if "address" in location:

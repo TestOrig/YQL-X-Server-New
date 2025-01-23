@@ -1,22 +1,22 @@
 import json
 import re
 import threading
-import requests
 import html
-from langcodes import Language
 from pathlib import Path
-from yql_x_server.args import args
+import requests
+from langcodes import Language
 from starlette_context import context
+from yql_x_server.args import args
 
 class YQL:
     def __init__(self):
-        self.generatedFileLock = threading.Lock()
+        self.gen_file_lock = threading.Lock()
 
-    def getWoeidsInQuery(self, q, formatted=False, Legacy=False):
+    def get_woeids_in_query(self, q, formatted=False, legacy=False):
         if formatted:
             return [q] if not isinstance(q, list) else q
         woeids = []
-        if Legacy:
+        if legacy:
             # It's an XML document
             for item in q.iter("id"):
                 woeids.append(item.text)
@@ -25,77 +25,100 @@ class YQL:
             if not woeid in woeids:
                 woeids.append(woeid)
         return woeids
-    
-    def getWoeidFromName(self, name, lang):
+
+    def get_woeid_from_name(self, name, lang):
         if not name:
             print("Name is empty")
             return "000000"
         print("Getting woeid from name, " + name)
-        try:
-            result = self.getSimilarName(name, lang)[0]['woeid']
+        result = self.get_similar_name(name, lang)
+        if result:
+            result = result[0]['woeid']
             print("Woeid from name is " + result)
             return result
-        except:
-            # Generate woeid from name, store the characters in unicode int format for decoding later
-            print("Generating woeid from name, " + name)
-            with self.generatedFileLock:
-                generatedFile = open(Path(args.generated_woeids_path), "r+")
-                generatedWoeids = json.load(generatedFile)
-                woeid = ""
-                woeidArray = []
-                for letter in name:
-                    unicode = str(ord(letter))
-                    woeid += unicode
-                    woeidArray.append(unicode)
-                if not any(woeid in v for v in generatedWoeids):
-                    print("Adding woeid to generatedWoeids.json")
-                    generatedWoeids.update({woeid: woeidArray})
-                    generatedFile.seek(0)
-                    generatedFile.write(json.dumps(generatedWoeids))
-                    generatedFile.truncate()
-                else:
-                    print("Woeid already in generatedWoeids.json")
-                generatedFile.close()
-                return woeid
+        # Generate woeid from name, store the characters in unicode int format for decoding later
+        print("Generating woeid from name, " + name)
+        with self.gen_file_lock:
+            generated_file = open(Path(args.generated_woeids_path), "r+", encoding='utf-8')
+            generated_woeids = json.load(generated_file)
+            woeid = ""
+            woeid_array = []
+            for letter in name:
+                unicode = str(ord(letter))
+                woeid += unicode
+                woeid_array.append(unicode)
+            if not any(woeid in v for v in generated_woeids):
+                print("Adding woeid to generatedWoeids.json")
+                generated_woeids.update({woeid: woeid_array})
+                generated_file.seek(0)
+                generated_file.write(json.dumps(generated_woeids))
+                generated_file.truncate()
+            else:
+                print("Woeid already in generatedWoeids.json")
+            generated_file.close()
+            return woeid
 
-    def getNamesForWoeids(self, woeids):
+    def get_names_for_woeids(self, woeids):
         names = []
-        
         for woeid in woeids:
-            try:
-                headers = {
-                    'User-Agent': 'YQL-X-Server',
-                    'X-Forwarded-For': context['client'].host
-                }
-                r = requests.get(args.yzugeo_server + "/lookup/name", params={"woeid": woeid}, headers=headers)
-                if r.status_code != 200:
-                    print(f"Failed to get name for {woeid}, yzugeo returned {r.status_code}")
-                    continue
-                names.append(r.json()["name"])
-            except Exception as e:
-                generatedFile = open(Path(args.generated_woeids_path), "r")
-                generatedWoeids = json.load(generatedFile)
-                if not generatedWoeids:
+            headers = {
+                'User-Agent': 'YQL-X-Server',
+                'X-Forwarded-For': context['client'].host
+            }
+            r = requests.get(
+                args.yzugeo_server + "/lookup/name",
+                params={"woeid": woeid},
+                headers=headers,
+                timeout=5
+            )
+            if r.status_code != 200:
+                print(f"Failed to get name for {woeid}, yzugeo returned {r.status_code}")
+                generated_file = open(Path(args.generated_woeids_path), "r", encoding='utf-8')
+                generated_woeids = json.load(generated_file)
+                if not generated_woeids:
+                    generated_file.close()
                     continue
                 name = ""
-                for unicodeChar in generatedWoeids[woeid]:
-                    name += chr(int(unicodeChar))
+                for unicode_char in generated_woeids[woeid]:
+                    name += chr(int(unicode_char))
                 names.append(name)
+                generated_file.close()
+                continue
+            names.append(r.json()["name"])
         return names
 
-    def getNamesForWoeidsInQ(self, q, Legacy=False):
-        if Legacy:
-            woeids = []
-            # It's an XML document
-            for item in q.iter("id"):
-                if "|" in item.text:
-                    woeids.append(item.text.split("|")[1])
-                else:
-                    woeids.append(item.text)
-            return self.getNamesForWoeids(woeids)
-        return self.getNamesForWoeids(q['woeids'])
+    def get_legacy_woeids_in_q(self, q, keep_prefix=False):
+        woeids = []
+        # It's an XML document
+        for item in q.iter("id"):
+            if "|" in item.text and not keep_prefix:
+                woeids.append(item.text.split("|")[1])
+            else:
+                woeids.append(item.text)
+        return woeids
 
-    def getSimilarName(self, name, lang):
+    def get_names_for_woeids_in_q(self, q):
+        return self.get_names_for_woeids(q['woeids'])
+
+    def get_metadata_for_woeid(self, woeid):
+        metadata = {}
+        headers = {
+            'User-Agent': 'YQL-X-Server',
+            'X-Forwarded-For': context['client'].host
+        }
+        r = requests.get(args.yzugeo_server + "/id/" + str(woeid), headers=headers, timeout=5)
+        if r.status_code != 200:
+            print(f"Failed to get metadata for {woeid}, yzugeo returned {r.status_code}")
+            return {"iso": "UNKN", "state": "UNKN"}
+        metadata = r.json()
+        if 'detail' in metadata:
+            # error case
+            print(f"Error getting metadata for {woeid}: {metadata['detail']}")
+            print(f"Attempted URL: {args.yzugeo_server + '/id/' + str(woeid)}")
+            metadata = {"iso": "UNKN", "state": "UNKN"}
+        return metadata
+
+    def get_similar_name(self, name, lang):
         q = {
             "query": name,
             "limit": 10,
@@ -107,7 +130,12 @@ class YQL:
             'User-Agent': 'YQL-X-Server',
             'X-Forwarded-For': context['client'].host
         }
-        r = requests.post(args.yzugeo_server + "/lookup/places", data=json.dumps(q), headers=headers)
+        r = requests.post(args.yzugeo_server + "/lookup/places",
+            data=json.dumps(q),
+            headers=headers,
+            timeout=5
+        )
+        print(f"Requesting {args.yzugeo_server + '/lookup/places'}, data: {q}")
         if r.status_code != 200:
             print(f"Failed to get similar name for {name}, yzugeo returned {r.status_code}")
             return []
@@ -116,11 +144,22 @@ class YQL:
         print(f"Got similar name for {name}: {results}, len {len(results)}")
         return results
 
-    def parseQuery(self, q):            
+    def parse_query(self, q, legacy=False):
+        if legacy:
+            _type = q[0].attrib['type']
+            if _type == "getlocationid":
+                # search case
+                result = {"term": q[0][0].text, "lang": q[0][1].text, "type": "search"}
+                return result
+            result = {}
+            result['woeids'] = self.get_legacy_woeids_in_q(q)
+            result['raw_woeids'] = self.get_legacy_woeids_in_q(q, keep_prefix=True)
+            result['type'] = "weather/woeid"
+            return result
         q = html.unescape(q)
         result = {'lang': re.search(r"lang='([^']+)'", q).group(1)}
         print(f"Parsing query: {q}")
-        if 'partner.weather.locations' and not 'yql.query.multi' in q:
+        if 'partner.weather.locations' in q and not 'yql.query.multi' in q:
             result['term'] = re.search(r'query="([^"]+)"', q).group(1)
             result['type'] = "search"
         elif "lat=" in q and "lon=" in q:
@@ -130,7 +169,5 @@ class YQL:
         elif "woeid" in q:
             result['woeids'] = list(set(re.findall(r'woeid=(\d+)', q)))
             result['type'] = "weather/woeid"
-        
+        result['lang'] = re.search(r"lang='([^']+)'", q).group(1)
         return result
-
-        

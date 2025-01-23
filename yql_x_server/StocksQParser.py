@@ -1,5 +1,3 @@
-from xml.etree import ElementTree
-
 def parseStocksXML(root):
     # This code is from https://github.com/bgant/inkyphat-stockmarket/blob/5f136787311c9831e04edd72d5aae7eb8a4f2863/deprecated/apple_quote.py
     results = {} # Initialize dictionary variable to hold XML response key-value pairs

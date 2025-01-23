@@ -1,19 +1,19 @@
 import requests
 from geopy.location import Location
-from yql_x_server.args import args
 from starlette_context import context
+from yql_x_server.args import args
 
 class YzuGeocoder:
     def __init__(self):
         pass
 
-    def geocode(self, name):
-        url = f"{args.yzugeo_server}/geocode?name={name}"
+    def geocode(self, name, country=None):
+        url = f"{args.yzugeo_server}/geocode?name={name}" + (f"&country={country}" if country else "")
         headers = {
             'User-Agent': 'YQL-X-Server',
             'X-Forwarded-For': context['client'].host
         }
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=5)
         if not response.ok:
             return None, None
         data = response.json()
@@ -27,7 +27,7 @@ class YzuGeocoder:
             'User-Agent': 'YQL-X-Server',
             'X-Forwarded-For': context['client'].host
         }
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=5)
         if not response.ok:
             return None
         res = response.json()
