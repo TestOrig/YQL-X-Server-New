@@ -6,7 +6,7 @@ from pathlib import Path
 from xml.etree import ElementTree
 from fastapi import FastAPI, APIRouter, Response, Request
 from fastapi.responses import PlainTextResponse
-import uvicorn
+import uvicorn, sentry_sdk
 
 from starlette_context.middleware import RawContextMiddleware
 from starlette_context import context
@@ -18,6 +18,9 @@ from yql_x_server.args import args
 app = FastAPI()
 sys.stdout.reconfigure(encoding='utf-8')
 
+if args.sentry_url:
+    sentry_sdk.init(args.sentry_url)
+
 genPath = Path(args.generated_woeids_path)
 if not os.path.exists(genPath):
     with open(genPath, "w", encoding="utf-8") as database:
@@ -27,10 +30,6 @@ if not os.path.exists(genPath):
 yql = YQL()
 yql_router = APIRouter(default_response_class=PlainTextResponse)
 dgw_router = APIRouter(default_response_class=PlainTextResponse)
-
-class XMLReqTypes(Enum):
-    FORECAST = 3,
-    LOCATION_SEARCH = 30,
 
 @dgw_router.get('/dgw')
 async def dgw_get():
@@ -45,11 +44,11 @@ async def dgw(request: Request):
         req_type = root[0].attrib['type']
         return XMLFactory.xml_stocks_factory_dgw(root, req_type)
     elif api == 'weather':
-        req_type = root[0].attrib['id']
-        if req_type == XMLReqTypes.LOCATION_SEARCH:
+        req_type = root[0].attrib['type']
+        if req_type == "getlocationid":
             q = yql.parse_query(root, legacy=True)
             return XMLFactory.xml_weather_factory_dgw(q, yql, search=True)
-        if req_type == XMLReqTypes.FORECAST:
+        if req_type == "getforecastbylocationid":
             q = yql.parse_query(root, legacy=True)
             return XMLFactory.xml_weather_factory_dgw(q, yql)
     return Response("Invalid Request", status_code=400)
@@ -58,7 +57,7 @@ async def dgw(request: Request):
 async def legacy_weather_yql(request: Request): 
     return await weather_endpoint(request)
 
-@yql_router.post('/yql/weather/dgw')
+@dgw_router.post('/yql/weather/dgw')
 async def legacy_weather_dgw(request: Request):
     return await dgw(request)
 

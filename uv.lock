@@ -748,6 +748,19 @@ wheels = [
 ]
 
 [[package]]
+name = "sentry-sdk"
+version = "2.20.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "certifi" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/68/e8/6a366c0cd5e129dda6ecb20ff097f70b18182c248d4c27e813c21f98992a/sentry_sdk-2.20.0.tar.gz", hash = "sha256:afa82713a92facf847df3c6f63cec71eb488d826a50965def3d7722aa6f0fdab", size = 300125 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e6/0f/6f7e6cd0f4a141752caef3f79300148422fdf2b8b68b531f30b2b0c0cbda/sentry_sdk-2.20.0-py2.py3-none-any.whl", hash = "sha256:c359a1edf950eb5e80cffd7d9111f3dbeef57994cb4415df37d39fda2cf22364", size = 322576 },
+]
+
+[[package]]
 name = "setuptools"
 version = "75.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -898,6 +911,7 @@ dependencies = [
     { name = "jinja2" },
     { name = "langcodes" },
     { name = "requests" },
+    { name = "sentry-sdk" },
     { name = "starlette-context" },
     { name = "uvicorn" },
     { name = "yfinance" },
@@ -913,6 +927,7 @@ requires-dist = [
     { name = "jinja2" },
     { name = "langcodes" },
     { name = "requests" },
+    { name = "sentry-sdk", specifier = ">=2.20.0" },
     { name = "starlette-context" },
     { name = "uvicorn" },
     { name = "yfinance" },

@@ -141,7 +141,7 @@ def xml_weather_factory_dgw(q: str, yql: YQL, search=False):
     else:
         # It's regular weather
         xml = legacy_weather_template.render({
-            "results": weather_results_factory(q, yql, legacy=True),
+            "results": weather_results_factory(q, yql),
             "advert_link": args.advert_link,
         })
     return format_xml(xml)

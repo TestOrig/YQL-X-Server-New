@@ -22,6 +22,7 @@ dependencies = [
     "langcodes",
     "starlette-context",
     "uvicorn",
+    "sentry-sdk>=2.20.0",
 ]
 name = "yql-x-server"
 version = "0.1.0"

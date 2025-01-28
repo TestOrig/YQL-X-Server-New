@@ -38,8 +38,8 @@ def get_ticker_info_real(ticker_name):
     info["sanitizedSymbol"] = sanitize_symbol(ticker_name)
     news = ticker.get_news()
     info["news"] = [{
-        "title": newsItem["content"]["title"],
-        "link": newsItem["content"]["canonicalUrl"]["url"],
+        "title": escape(newsItem["content"]["title"]),
+        "link": escape(newsItem["content"]["canonicalUrl"]["url"]),
         "published": int(
             datetime.strptime(newsItem["content"]["pubDate"], "%Y-%m-%dT%H:%M:%SZ")
             .replace(tzinfo=timezone.utc)

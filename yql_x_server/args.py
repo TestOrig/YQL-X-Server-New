@@ -11,4 +11,5 @@ parser.add_argument("--generated_woeids_path", type=str, default=os.path.join(mo
 parser.add_argument("--yzugeo_server", type=str, default="https://apis.yzu.moe/yzugeo/v1")
 parser.add_argument("--owm_key", type=str, required=True)
 parser.add_argument("--advert_link", type=str, default="https://yzu.moe", help="Link to provide for in app resources, default is my site :)")
+parser.add_argument("--sentry_url", type=str, default=None, help="Sentry DSN URL")
 args = parser.parse_args()

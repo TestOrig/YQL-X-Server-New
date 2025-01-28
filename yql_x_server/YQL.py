@@ -150,15 +150,17 @@ class YQL:
             if _type == "getlocationid":
                 # search case
                 result = {"term": q[0][0].text, "lang": q[0][1].text, "type": "search"}
+                print(f"Parsing query: {q}, result: {result}")
                 return result
             result = {}
             result['woeids'] = self.get_legacy_woeids_in_q(q)
             result['raw_woeids'] = self.get_legacy_woeids_in_q(q, keep_prefix=True)
             result['type'] = "weather/woeid"
+            result['lang'] = q[0][1].text
+            print(f"Parsing query: {q}, result: {result}")
             return result
         q = html.unescape(q)
         result = {'lang': re.search(r"lang='([^']+)'", q).group(1)}
-        print(f"Parsing query: {q}")
         if 'partner.weather.locations' in q and not 'yql.query.multi' in q:
             result['term'] = re.search(r'query="([^"]+)"', q).group(1)
             result['type'] = "search"
@@ -168,6 +170,9 @@ class YQL:
             result['type'] = "weather/latlon"
         elif "woeid" in q:
             result['woeids'] = list(set(re.findall(r'woeid=(\d+)', q)))
+            if not result['woeids']:
+                result['woeids'] = list(set(re.findall(r'woeid.*?(\d+)', q)))
             result['type'] = "weather/woeid"
         result['lang'] = re.search(r"lang='([^']+)'", q).group(1)
+        print(f"Parsing query: {q}, result: {result}")
         return result

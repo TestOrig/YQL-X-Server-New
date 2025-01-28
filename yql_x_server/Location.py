@@ -118,7 +118,10 @@ class Location:
         self.temp = weather['current']['temp']
         self.temp_rounded = round(self.temp)
         self.timezone = format_timezone(weather["timezone_offset"])
-        self.visibility = weather['current']['visibility'] / 1000
+        if 'visibility' in weather['current']:
+            self.visibility = weather['current']['visibility'] / 1000
+        else:
+            self.visibility = 1
         self.wind_chill = weather['current']['feels_like']
         self.wind_deg = weather['current']['wind_deg']
         self.wind_speed = weather['current']['wind_speed']
