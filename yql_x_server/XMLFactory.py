@@ -19,7 +19,10 @@ stocks_getchart_template = env.get_template('stocks_getchart.jinja2')
 stocks_getnews_template = env.get_template('stocks_getnews.jinja2')
 
 def format_xml(xml):
-    return re.sub(r'\s+(?=<)', '', xml)
+    if "None" in xml:
+        print("There is a none in the xml, please fix it!")
+    out = re.sub(r'\s+(?=<)', '', xml)
+    return out
 
 def weather_results_factory(q, yql: YQL, latlong_in_query=False):
     if "limit 1" in q and latlong_in_query:

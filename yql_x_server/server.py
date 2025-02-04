@@ -1,11 +1,9 @@
 import sys
 import os
 import json
-from enum import Enum
 from pathlib import Path
 from xml.etree import ElementTree
 from fastapi import FastAPI, APIRouter, Response, Request
-from fastapi.responses import PlainTextResponse
 import uvicorn, sentry_sdk
 
 from starlette_context.middleware import RawContextMiddleware
@@ -28,8 +26,12 @@ if not os.path.exists(genPath):
         database.close()
 
 yql = YQL()
-yql_router = APIRouter(default_response_class=PlainTextResponse)
-dgw_router = APIRouter(default_response_class=PlainTextResponse)
+
+class XMLResponse(Response):
+    media_type = "application/xml"
+    charset = "utf-8"
+yql_router = APIRouter(default_response_class=XMLResponse)
+dgw_router = APIRouter(default_response_class=XMLResponse)
 
 @dgw_router.get('/dgw')
 async def dgw_get():

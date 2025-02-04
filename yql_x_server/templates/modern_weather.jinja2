@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<query
-	xmlns:yahoo="http://www.yahooapis.com/v1/base.rng" yahoo:count="{{count}}" yahoo:created="2012-10-30T11:36:42Z" yahoo:lang="en-US">
+<query xmlns:yahoo="http://www.yahooapis.com/v1/base.rng" yahoo:count="{{count}}" yahoo:created="2012-10-30T11:36:42Z" yahoo:lang="en-US">
 	<meta>
 		<meta>
 			<weather>
@@ -21,7 +20,7 @@
         {% for location in results %}
 		<results>
 			<location city="{{location.city}}" country="{{location.country_alpha3}}" latitude="{{location.latitude}}" locationID="{{location.location_id}}" longitude="{{location.longitude}}" state="{{location.state}}" woeid="{{location.woeid}}">
-				<currently barometer="{{location.barometer}}" barometricTrend="" dewpoint="{{location.dew_point}}" feelsLike="{{location.feels_like}}" heatIndex="{{location.feels_like}}" moonfacevisible="{{location.moonfacevisible}}%" moonphase="{{location.moonphase}}" percentHumidity="{{location.p_humidity}}" sunrise="{{location.sunrise_12h}}" sunrise24="{{location.sunrise_24h}}" sunset="{{location.sunset_12h}}" sunset24="{{location.sunset_24h}}" temp="{{location.temp}}" tempBgcolor="" time="{{location.current_time_12h}}" time24="{{location.current_time_24h}}" timezone="{{location.timezone}}" tz="EST" visibility="{{location.visibility}}" windChill="{{location.feels_like}}" windDirection="" windDirectionDegree="{{location.wind_deg}}" windSpeed="{{location.wind_speed}}">
+				<currently barometer="{{location.barometer}}" barometricTrend="" dewpoint="{{location.dew_point}}" feelsLike="{{location.feels_like}}" heatIndex="{{location.feels_like}}" moonfacevisible="{{location.moonfacevisible}}%" moonphase="{{location.moonphase}}" percentHumidity="{{location.p_humidity}}" sunrise="{{location.sunrise_12h}}" sunrise24="{{location.sunrise_24h}}" sunset="{{location.sunset_12h}}" sunset24="{{location.sunset_24h}}" temp="{{location.temp}}" tempBgcolor="" time="{{location.current_time_12h}}" time24="{{location.current_time_24h}}" timezone="{{location.timezone}}" visibility="{{location.visibility}}" windChill="{{location.feels_like}}" windDirection="{{location.wind_deg}}" windDirectionDegree="{{location.wind_deg}}" windSpeed="{{location.wind_speed}}">
 					<condition code="{{location.currently_condition_code}}" />
 				</currently>
 				<forecast>
