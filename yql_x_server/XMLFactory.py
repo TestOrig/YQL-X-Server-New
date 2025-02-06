@@ -1,12 +1,12 @@
 import re
-from pathlib import Path
 import time
 from jinja2 import Environment, FileSystemLoader
-from yql_x_server.StocksQParser import parseStocksXML
-from yql_x_server.YQL import YQL
-from yql_x_server.Location import Location, SearchLocation
-from yql_x_server.args import module_dir, args
-from yql_x_server.Stocks import Symbol, get_ticker_chart_for_range, get_ticker_info
+from pathlib import Path
+from .stocks.StocksQParser import parseStocksXML
+from .modules.YQL import YQL
+from .modules.Location import Location, SearchLocation
+from .args import module_dir, args
+from .stocks.Stocks import Symbol, get_ticker_chart_for_range, get_ticker_info
 
 templates_path = Path(module_dir) / "templates"
 env = Environment(loader = FileSystemLoader(templates_path))

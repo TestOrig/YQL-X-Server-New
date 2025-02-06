@@ -1,6 +1,6 @@
 import inspect
 from geopy.geocoders import Nominatim, GeoNames
-from yql_x_server.YzuGeocoder import YzuGeocoder
+from .geocoder.YzuGeocoder import YzuGeocoder
 
 class Geocoder:
     _shared_instance = None

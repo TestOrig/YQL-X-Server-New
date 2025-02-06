@@ -1,7 +1,7 @@
 import requests
 from geopy.location import Location
 from starlette_context import context
-from yql_x_server.args import args
+from ...args import args
 
 class YzuGeocoder:
     def __init__(self):
@@ -22,6 +22,7 @@ class YzuGeocoder:
 
     def reverse(self, latlong: tuple):
         url = f"{args.yzugeo_server}/reverse_geocode?lat={latlong[0]}&lon={latlong[1]}"
+        print(f"Reverse geocoding {latlong[0]}, {latlong[1]}, url: {url}")
         headers = {
             'User-Agent': 'YQL-X-Server',
             'X-Forwarded-For': context['client'].host

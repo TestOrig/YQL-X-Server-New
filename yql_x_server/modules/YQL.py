@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from langcodes import Language
 from starlette_context import context
-from yql_x_server.args import args
+from ..args import args
 
 class YQL:
     def __init__(self):

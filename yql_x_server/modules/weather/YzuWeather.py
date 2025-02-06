@@ -1,10 +1,10 @@
 import pytz
 import ephem
 import requests
-from datetime import datetime as dt, timezone
-from yql_x_server.Date import *
-from .Weather import Weather
-from .utils import *
+from datetime import datetime as dt, timezone, date
+from ..Weather import Weather
+from ...utils import *
+from ...args import args
 
 class YzuWeather(Weather):
     def __init__(self):
@@ -56,17 +56,17 @@ class YzuWeather(Weather):
     def _normalize_time(self, time: int, data):
         return dt.fromtimestamp(time, dt.now(timezone.utc).astimezone().tzinfo).astimezone(pytz.timezone(data["timezone"]))
 
-    def get_current_weather(self, lat, lng):
+    def get_weather_dict(self, lat, lng):
         _key = f"{lat},{lng}"
         data = self.retrieve(_key)
         if data:
             print("Using cached weather data")
             return data
-        uri = f'http://192.168.1.228:3004/v1/forecast'
+        uri = args.yzugeo_weather_server
         #uri = 'https://api.open-meteo.com/v1/forecast'
         querystring = self.query_builder(lat, lng)
         response = (requests.request("GET", uri, params=querystring, timeout=15)).json()
-        if response:
+        if response and "hourly" in response and "daily" in response and "current" in response:
             for idx, hour in enumerate(response["hourly"]["time"]):
                 response["hourly"]["time"][idx] = self._normalize_time(hour, response)
             for idx, day in enumerate(response["daily"]["time"]):
@@ -115,24 +115,57 @@ class YzuWeather(Weather):
 
     def format_to_loc(self, data):
         moonphase = get_phase_on_day(self.current_time.year, self.current_time.month, self.current_time.day)
-        moonphase_percent = f"{int(round(moonphase * 100, 0))}%"
+        moonphase_percent = int(round(moonphase * 100, 0))
         moon_info = moon_phase(moonphase)
         day_idx = self.current_time.weekday()
         hour_idx = self.current_time.hour + self.prefix_hours
-        visibility = int(((data["current"].get("visibility") or 1000)) / 1000)
+        visibility = int(((data["current"].get("visibility") or 100)) / 100)
         feels_like = self.data["current"].get("apparent_temperature")
         if not feels_like:
             feels_like = data["current"].get("temperature_2m")
         wind_chill = feels_like
+
+        for idx in day_array():
+            poP = data["daily"]["precipitation_probability_mean"][idx]
+            if poP is None:
+                poP = 0
+            self.days.append({
+                "ordinal": idx,
+                "currently_condition_code": self._get_weather_code_for_day(data, idx),
+                "currently_condition_text": "",
+                "high": data["daily"]["temperature_2m_max"][idx],
+                "high_rounded": round(data["daily"]["temperature_2m_max"][idx]),
+                "low": data["daily"]["temperature_2m_min"][idx],
+                "low_rounded": round(data["daily"]["temperature_2m_min"][idx]),
+                "poP": poP
+            })
+
+        for idx in range(hour_idx+1, hour_idx+12):
+            curr_time: dt = data["hourly"]["time"][idx]
+            minute = str(curr_time.minute)
+            poP = data["hourly"]["precipitation_probability"][idx]
+            if poP is None:
+                poP = 0
+            if len(minute) == 1:
+                minute = f"0{minute}"
+            self.hours.append({
+                "currently_condition_code": self._get_weather_code_for_hour(data, idx),
+                "poP": poP,
+                "temp": data["hourly"]["temperature_2m"][idx],
+                "time_24h": f"{curr_time.hour}:{minute}"
+            })
+
         out = {
             "barometer": int(data["current"]["pressure_msl"]),
             "currently_condition_code": self._get_currently_weather_code(data, day_idx, hour_idx),
             "currently_condition_text": "",
             "current_time_12h": self.current_time.strftime("%I:%M %p"),
             "current_time_24h": self.current_time.strftime("%H:%M"),
+            "days": [i for i in self.days],
             "dew_point": data["current"]["dew_point_2m"],
             "feels_like": feels_like,
-            "moonfacevisible": moon_info[0],
+            "hours": [i for i in self.hours],
+            "moonfacevisible": moonphase_percent,
             "moonphase": moon_info[1],
             "p_humidity": data["current"]["relative_humidity_2m"],
             "sunrise_12h": self.sunrise_today.strftime("%I:%M %p"),
@@ -148,34 +181,6 @@ class YzuWeather(Weather):
             "wind_speed": data["current"].get("wind_speed_10m", 0)
         }
 
-        for idx in day_array():
-            poP = data["daily"]["precipitation_probability_mean"][idx]
-            if poP is None:
-                poP = 0
-            self.days.append(Weather.Day(idx, {
-                "currently_condition_code": self._get_weather_code_for_day(data, idx),
-                "currently_condition_text": "",
-                "high": data["daily"]["temperature_2m_max"][idx],
-                "high_rounded": round(data["daily"]["temperature_2m_max"][idx]),
-                "low": data["daily"]["temperature_2m_min"][idx],
-                "low_rounded": round(data["daily"]["temperature_2m_min"][idx]),
-                "pop": poP
-            }))
-
-        for idx in range(hour_idx+1, hour_idx+12):
-            curr_time: dt = data["hourly"]["time"][idx]
-            minute = str(curr_time.minute)
-            poP = data["hourly"]["precipitation_probability"][idx]
-            if poP is None:
-                poP = 0
-            if len(minute) == 1:
-                minute = f"0{minute}"
-            self.hours.append(Weather.Hour({
-                "currently_condition_code": self._get_weather_code_for_hour(data, idx),
-                "poP": poP,
-                "temp": data["hourly"]["temperature_2m"][idx],
-                "time_24h": f"{curr_time.hour}:{minute}"
-            }))
         return out
 
     def get_days(self):
@@ -285,12 +290,12 @@ def get_phase_on_day(year: int, month: int, day: int):
   #This corresponds (somewhat roughly) to the phase of the moon.
 
   #Use Year, Month, Day as arguments
-  date = ephem.Date(datetime.date(year,month,day))
+  _date = ephem.Date(date(year,month,day))
 
-  nnm = ephem.next_new_moon(date)
-  pnm = ephem.previous_new_moon(date)
+  nnm = ephem.next_new_moon(_date)
+  pnm = ephem.previous_new_moon(_date)
 
-  lunation = (date-pnm)/(nnm-pnm)
+  lunation = (_date-pnm)/(nnm-pnm)
 
   #Note that there is a ephem.Moon().phase() command, but this returns the
   #percentage of the moon which is illuminated. This is not really what we want.

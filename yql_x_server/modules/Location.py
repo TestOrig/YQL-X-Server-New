@@ -1,8 +1,8 @@
 from xml.sax.saxutils import escape
 from iso3166 import countries
-from yql_x_server.Weather import Weather
-from yql_x_server.Geocoder import Geocoder, get_city
-from yql_x_server.YQL import YQL
+from .Weather import get_weather
+from .Geocoder import Geocoder, get_city
+from .YQL import YQL
 
 class Country:
     def __init__(self, name, alpha3):
@@ -61,8 +61,8 @@ class Location:
         self.city = escape(self.city)
         self.location_id = "ASXX0075"
         self.state = self.metadata['state']
-        weather, self.days, self.hours = Weather.get_weather(self.latitude, self.longitude)
-        if weather and self.days and self.hours:
+        weather = get_weather(self.latitude, self.longitude)
+        if weather:
             self.__dict__.update(weather)
         else:
             raise ValueError("No weather data found.")

@@ -23,6 +23,10 @@ dependencies = [
     "starlette-context",
     "uvicorn",
     "sentry-sdk>=2.20.0",
+    "timezonefinder>=6.5.8",
+    "pytz>=2024.2",
+    "pyephem>=9.99",
+    "redis[hiredis]>=5.2.1",
 ]
 name = "yql-x-server"
 version = "0.1.0"

@@ -4,14 +4,14 @@ import json
 from pathlib import Path
 from xml.etree import ElementTree
 from fastapi import FastAPI, APIRouter, Response, Request
-import uvicorn, sentry_sdk
+import uvicorn, sentry_sdk, redis
 
 from starlette_context.middleware import RawContextMiddleware
 from starlette_context import context
 
-from yql_x_server.YQL import YQL
-from yql_x_server import XMLFactory
-from yql_x_server.args import args
+from .modules.YQL import YQL
+from . import XMLFactory
+from .args import args
 
 app = FastAPI()
 sys.stdout.reconfigure(encoding='utf-8')
@@ -87,5 +87,5 @@ def start():
         port=args.port,
         proxy_headers=True,
         forwarded_allow_ips='*',
-        workers=8,
+        workers=args.workers
     )

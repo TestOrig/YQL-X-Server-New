@@ -1,14 +1,14 @@
+import time
 import requests
-from yql_x_server.Date import *
-from yql_x_server.args import args
-from .Weather import Weather
-from .utils import *
+from ..Weather import Weather
+from ...args import args
+from ...utils import *
 
 class OWMWeather(Weather):
     def __init__(self):
         super().__init__()
 
-    def get_current_weather(self, lat, lng):
+    def get_weather_dict(self, lat, lng):
         _key = f"{lat},{lng}"
         data = self.retrieve(_key)
         if data:
@@ -36,14 +36,40 @@ class OWMWeather(Weather):
         sunrise = format_time_with_offset(data["current"]["sunrise"], data["timezone_offset"])
         sunset = format_time_with_offset(data["current"]["sunset"], data["timezone_offset"])
 
+        for idx in day_array():
+            self.days.append({
+                "ordinal": idx,
+                "currently_condition_code": weather_icon(data["daily"][idx]["weather"][0]["id"], data["daily"][idx]["dt"], data["daily"][idx]["sunset"]),
+                "currently_condition_text": data["daily"][idx]["weather"][0]["description"],
+                "high": data["daily"][idx]["temp"]["max"],
+                "high_rounded": round(data["daily"][idx]["temp"]["max"]),
+                "low": data["daily"][idx]["temp"]["min"],
+                "low_rounded": round(data["daily"][idx]["temp"]["min"]),
+                "poP": format_poP(data["daily"][idx]["pop"])
+            })
+
+        for idx in range(1, 12):
+            convTime = time.gmtime(data["hourly"][idx]['dt']+data["timezone_offset"])
+            minute = str(convTime.tm_min)
+            if len(minute) == 1:
+                minute = f"0{minute}"
+            self.hours.append({
+                "currently_condition_code": weather_icon(data["hourly"][idx]["weather"][0]["id"], data["hourly"][idx]["dt"], data["current"]["sunset"]),
+                "poP": format_poP(data["hourly"][idx]["pop"]),
+                "temp": data["hourly"][idx]["temp"],
+                "time_24h": f"{str(convTime.tm_hour)}:{minute}"
+            })
+
         out = {
             "barometer": data["current"]["pressure"],
             "currently_condition_code": weather_icon(data["current"]["weather"][0]["id"], data["current"]["dt"], data["current"]["sunset"]),
             "currently_condition_text": data["current"]["weather"][0]["description"],
             "current_time_12h": format_time_str(curr_time, is_12h=True),
             "current_time_24h": format_time_str(curr_time),
+            "days": [i for i in self.days],
             "dew_point": data["current"]["dew_point"],
             "feels_like": data["current"]["feels_like"],
+            "hours": [i for i in self.hours],
             "moonfacevisible": moon_info[0],
             "moonphase": moon_info[1],
             "p_humidity": data["current"]["humidity"],
@@ -59,36 +85,7 @@ class OWMWeather(Weather):
             "wind_deg": data["current"]["wind_deg"],
             "wind_speed": data["current"]["wind_speed"]
         }
-
-        for idx in day_array():
-            self.days.append(Weather.Day(idx, {
-                "currently_condition_code": weather_icon(data["daily"][idx]["weather"][0]["id"], data["daily"][idx]["dt"], data["daily"][idx]["sunset"]),
-                "currently_condition_text": data["daily"][idx]["weather"][0]["description"],
-                "high": data["daily"][idx]["temp"]["max"],
-                "high_rounded": round(data["daily"][idx]["temp"]["max"]),
-                "low": data["daily"][idx]["temp"]["min"],
-                "low_rounded": round(data["daily"][idx]["temp"]["min"]),
-                "pop": format_poP(data["daily"][idx]["pop"])
-            }))
-
-        for idx in range(1, 12):
-            convTime = time.gmtime(data["hourly"][idx]['dt']+data["timezone_offset"])
-            minute = str(convTime.tm_min)
-            if len(minute) == 1:
-                minute = f"0{minute}"
-            self.hours.append(Weather.Hour({
-                "currently_condition_code": weather_icon(data["hourly"][idx]["weather"][0]["id"], data["hourly"][idx]["dt"], data["current"]["sunset"]),
-                "poP": format_poP(data["hourly"][idx]["pop"]),
-                "temp": data["hourly"][idx]["temp"],
-                "time_24h": f"{str(convTime.tm_hour)}:{minute}"
-            }))
         return out
-
-    def get_days(self):
-        return self.days
-    
-    def get_hours(self):
-        return self.hours
 
 def format_time_with_offset(dt, timezone_offset):
     currTime = time.gmtime(dt+timezone_offset)
