@@ -18,10 +18,6 @@ available_providers = [
 if args.owm_key is None:
     available_providers.remove(OWMWeather)
 
-available_providers = [provider() for provider in available_providers]
-
-weatherObj = Weather(available_providers)
-
 def get_weather(lat, lon):
     _id = None
     if redis_conn:
@@ -29,7 +25,7 @@ def get_weather(lat, lon):
         weather = redis_conn.json().get(f"weather_{_id}")
         if weather is not None:
             return weather
-    result = weatherObj.get_weather(lat, lon)
+    result = Weather(available_providers).get_weather(lat, lon)
     if redis_conn:
         redis_conn.json().set(f"weather_{_id}", "$", result)
         redis_conn.expire(f"weather_{_id}", 3600)

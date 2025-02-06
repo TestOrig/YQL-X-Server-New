@@ -2,12 +2,12 @@ class Weather:
     def get_weather(self, lat, lng):
         for provider in self.available_providers:
             try:
-                weather = provider.get_weather_dict(lat, lng)
+                weather = provider().get_weather_dict(lat, lng)
                 if weather:
-                    print(f"Utilizing weather from provider: {provider.__class__.__name__}")
+                    print(f"Utilizing weather from provider: {provider.__name__}")
                     return weather
             except Exception as e:
-                print(f"Error getting weather from {provider.__class__.__name__}: {e}")
+                print(f"Error getting weather from {provider.__name__}: {e}")
                 if self.available_providers.index(provider) == len(self.available_providers) - 1:
                     raise e
                 continue
