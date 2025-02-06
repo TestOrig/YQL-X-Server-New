@@ -9,7 +9,7 @@ class Geocoder:
         if not cls._shared_instance:
             cls._shared_instance = super(Geocoder, cls).__new__(cls)
         return cls._shared_instance
-  
+
     def __init__(self):
         self.geocoders = [
             YzuGeocoder(),
@@ -30,7 +30,7 @@ class Geocoder:
             except Exception as e:
                 print(f"Failed to geocode {city} with {geocoder}, Error: {e}")
         return None, None
- 
+
     def reverse_geocode(self, lat, long):
         for geocoder in self.geocoders:
             try:

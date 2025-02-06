@@ -36,29 +36,32 @@ class Location:
             setattr(_self, k, v)
         return _self
 
-    def __init__(self, yql: YQL, latlong=None, city_name=None, woeid=None, lang=None, raw_woeid=None):
-        if not any([latlong, city_name, woeid]):
-            raise ValueError("At least one of latlong, city_name, or woeid must be provided.")
+    def __init__(self, yql: YQL, latlong=None, metadata=None, lang=None, raw_woeid=None):
+        if not latlong and not metadata:
+            raise ValueError("At least one of latlong or metadata must be provided.")
 
-        self.metadata = {}
         geocoder = Geocoder()
 
-        # If WOEID is provided, get metadata and city name
-        if woeid:
-            self.woeid = woeid
-            self.metadata = yql.get_metadata_for_woeid(woeid)
-            self.city = city_name or self.metadata.get('name')
-        elif city_name:
-            self.city = city_name
-            self.woeid = yql.get_woeid_from_name(city_name, lang=lang)
-            self.metadata = yql.get_metadata_for_woeid(self.woeid)
+        if metadata:
+            self.woeid = metadata['id']
+            self.city = metadata['name']
+            self.country_alpha3 = metadata['iso']
+            self.lang = lang
+            if not latlong:
+                latlong = geocoder.geocode(self.city, country=self.country_alpha3)
+                self.latitude, self.longitude = latlong
+            self.city = escape(self.city)
+            self.metadata = metadata
         elif latlong:
             self.latitude, self.longitude = latlong
             location = geocoder.reverse_geocode(self.latitude, self.longitude)
             self.city = get_city(location)
             self.woeid = location.get("woeid") or yql.get_woeid_from_name(self.city, lang=lang)
             self.metadata = yql.get_metadata_for_woeid(self.woeid)
-
+            self.country_alpha3 = self.metadata['iso']
+            self.lang = lang
+        else:
+            raise ValueError("At least one of latlong or woeid must be provided.")
         # Ensure latlong is assigned
         if not latlong:
             latlong = geocoder.geocode(self.city, country=self.metadata.get('iso', ''))

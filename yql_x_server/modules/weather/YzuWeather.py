@@ -1,8 +1,8 @@
+from datetime import datetime as dt, timezone
 import pytz
 import requests
-from datetime import datetime as dt, timezone, date
 from ..Weather import Weather
-from ...utils import *
+from ...utils import format_timezone, moon_phase, day_array, get_moon_phase_for_date
 from ...args import args
 
 class YzuWeather(Weather):
@@ -16,7 +16,7 @@ class YzuWeather(Weather):
         self.data = None
 
     def query_builder(self, lat, lng):
-        vars = {
+        _vars = {
             "latitude": lat,
             "longitude": lng,
             "hourly": ",".join([
@@ -50,7 +50,7 @@ class YzuWeather(Weather):
             "timezone": "auto",
             "past_days": self.prefix_days
         }
-        return vars
+        return _vars
 
     def _normalize_time(self, time: int, data):
         return dt.fromtimestamp(time, dt.now(timezone.utc).astimezone().tzinfo).astimezone(pytz.timezone(data["timezone"]))
@@ -89,7 +89,7 @@ class YzuWeather(Weather):
                 return self._get_weather_code_for_hour(data, hour)
             return 48
         return ret
-    
+
     def _get_weather_code_for_hour(self, data, hour):
         hourly_data = data.get("hourly", {})
         weather_code = hourly_data["weather_code"][hour]
@@ -184,7 +184,7 @@ class YzuWeather(Weather):
 
     def get_days(self):
         return self.days
-    
+
     def get_hours(self):
         return self.hours
 

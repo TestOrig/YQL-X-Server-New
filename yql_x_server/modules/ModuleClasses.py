@@ -17,7 +17,7 @@ class Weather:
         self.days = []
         self.hours = []
         self.available_providers = providers
-    
+
     def store(self, data, key):
         # empty for now, until we add redis
         pass
@@ -67,7 +67,4 @@ class Weather:
         #     "wind_deg": 180,
         #     "wind_speed": 5.0
         # } consider using store and retrieve at the start and end of this method
-
-
-
 

@@ -2,12 +2,9 @@ import time
 import requests
 from ..Weather import Weather
 from ...args import args
-from ...utils import *
+from ...utils import format_time_str, format_timezone, format_poP, moon_phase, day_array
 
 class OWMWeather(Weather):
-    def __init__(self):
-        super().__init__()
-
     def get_weather_dict(self, lat, lng):
         _key = f"{lat},{lng}"
         data = self.retrieve(_key)
@@ -31,7 +28,7 @@ class OWMWeather(Weather):
 
     def format_to_loc(self, data):
         moon_info = moon_phase(float(data["daily"][0]["moon_phase"]))
-        
+
         curr_time = format_time_with_offset(data["current"]["dt"], data["timezone_offset"])
         sunrise = format_time_with_offset(data["current"]["sunrise"], data["timezone_offset"])
         sunset = format_time_with_offset(data["current"]["sunset"], data["timezone_offset"])
@@ -49,15 +46,15 @@ class OWMWeather(Weather):
             })
 
         for idx in range(1, 12):
-            convTime = time.gmtime(data["hourly"][idx]['dt']+data["timezone_offset"])
-            minute = str(convTime.tm_min)
+            conv_time = time.gmtime(data["hourly"][idx]['dt']+data["timezone_offset"])
+            minute = str(conv_time.tm_min)
             if len(minute) == 1:
                 minute = f"0{minute}"
             self.hours.append({
                 "currently_condition_code": weather_icon(data["hourly"][idx]["weather"][0]["id"], data["hourly"][idx]["dt"], data["current"]["sunset"]),
                 "poP": format_poP(data["hourly"][idx]["pop"]),
                 "temp": data["hourly"][idx]["temp"],
-                "time_24h": f"{str(convTime.tm_hour)}:{minute}"
+                "time_24h": f"{str(conv_time.tm_hour)}:{minute}"
             })
 
         out = {
@@ -88,8 +85,8 @@ class OWMWeather(Weather):
         return out
 
 def format_time_with_offset(dt, timezone_offset):
-    currTime = time.gmtime(dt+timezone_offset)
-    return f"{str(currTime.tm_hour)}:{str(currTime.tm_min)}"
+    curr_time = time.gmtime(dt+timezone_offset)
+    return f"{str(curr_time.tm_hour)}:{str(curr_time.tm_min)}"
 
 ##
 # 0 = lightning

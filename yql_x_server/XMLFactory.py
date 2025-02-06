@@ -1,8 +1,8 @@
 import re
 import time
+from pathlib import Path
 import redis
 from jinja2 import Environment, FileSystemLoader
-from pathlib import Path
 from .stocks.StocksQParser import parseStocksXML
 from .modules.YQL import YQL
 from .modules.Location import Location, SearchLocation
@@ -34,7 +34,7 @@ def format_xml(xml):
 def store_location_in_redis(_id, location):
     if redis_conn:
         redis_conn.json().set(f"weather_{_id}", "$", location.__dict__)
-        redis_conn.expire(f"weather_{_id}", 3600)
+        redis_conn.expire(f"weather_{_id}", 1800) # 30 minutes
     return location
 
 def get_weather_from_redis(_id):
@@ -48,7 +48,7 @@ def weather_results_factory(q, yql: YQL, latlong_in_query=False):
     _id = None
 
     if ("limit 1" in q and latlong_in_query) or latlong_in_query:
-        if latlong_in_query:
+        if redis_conn:
             _id = abs(hash(f"{q['lat']}_{q['lon']}"))
             weather = get_weather_from_redis(_id)
             if weather:
@@ -56,46 +56,30 @@ def weather_results_factory(q, yql: YQL, latlong_in_query=False):
 
         location = Location(yql, latlong=(q['lat'], q['lon']), lang=q['lang'])
         return [store_location_in_redis(_id, location)]
-    elif "limit 1" in q:
+    if "limit 1" in q:
         if redis_conn:
             _id = abs(hash(q['woeids'][0]))
             weather = get_weather_from_redis(_id)
             if weather:
                 return [weather]
-        city = yql.get_names_for_woeids_in_q(q, nameInQuery=True)
-        location = Location(yql, city_name=city[0], lang=q['lang'])
+        metadata = yql.get_metadata_for_woeid(q['woeids'][0])
+        location = Location(yql, metadata=metadata, lang=q['lang'])
         return [store_location_in_redis(_id, location)]
 
     results = []
-    cities = yql.get_names_for_woeids_in_q(q)
-    for i, city in enumerate(cities):
-        if latlong_in_query:
-            _id = abs(hash(f"{q['lat']}_{q['lon']}"))
-            weather = get_weather_from_redis(_id)
-            if weather:
-                results.append(weather)
+    for woeid in q['woeids']:
+        if not "raw_woeids" in q:
+            q['raw_woeids'] = q['woeids']
 
-            location = Location(yql, latlong=(q['lat'], q['lon']))
-            results.append(store_location_in_redis(_id, location))
-        else:
-            print(f"Adding {city} to results")
-            if not "raw_woeids" in q:
-                q['raw_woeids'] = q['woeids']
+        _id = abs(hash(woeid))
+        weather = get_weather_from_redis(_id)
+        if weather:
+            results.append(weather)
+            continue
 
-            _id = abs(hash(q['woeids'][i]))
-            weather = get_weather_from_redis(_id)
-            if weather:
-                results.append(weather)
-                continue
-
-            location = Location(
-                yql,
-                city_name=city,
-                woeid=q['woeids'][i],
-                raw_woeid=q['raw_woeids'][i],
-                lang=q['lang'],
-            )
-            results.append(store_location_in_redis(_id, location))
+        metadata = yql.get_metadata_for_woeid(woeid)
+        location = Location(yql, metadata=metadata, lang=q['lang'])
+        results.append(store_location_in_redis(_id, location))
     return results
 
 def search_results_factory(q, yql: YQL, legacy=False):
