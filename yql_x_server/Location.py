@@ -49,8 +49,6 @@ class Location:
             self.latitude, self.longitude = latlong
             location = geocoder.reverse_geocode(self.latitude, self.longitude)
             self.city = get_city(location)
-            print(f"self.city: {self.city}, location: {location}")
-
             self.woeid = location.get("woeid") or yql.get_woeid_from_name(self.city, lang=lang)
             self.metadata = yql.get_metadata_for_woeid(self.woeid)
 

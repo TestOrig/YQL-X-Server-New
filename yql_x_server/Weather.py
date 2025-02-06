@@ -1,4 +1,5 @@
 from cachetools import TTLCache
+from starlette_context import context
 
 class Weather:
     available_providers = [
@@ -24,15 +25,20 @@ class Weather:
         return None
 
     def __init__(self):
-        self.cache = TTLCache(maxsize=100, ttl=3600)
+        if 'cache' not in context:
+            print("Creating cache")
+            context['cache'] = TTLCache(maxsize=100, ttl=3600)
         self.days = []
         self.hours = []
     
     def store(self, data, key):
-        self.cache[key] = data
+        print(f"Storing data for key: {key}")
+        print(type(context['cache']))
+        context['cache'][key] = data
 
     def retrieve(self, key):
-        return self.cache.get(key)
+        print(f"Retrieving data for key: {key}")
+        return context['cache'].get(key)
 
     def get_current_weather(self, lat, lng):
         pass # This method should return a dict containing the following as an example.

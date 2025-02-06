@@ -61,7 +61,6 @@ def get_ticker_changes(ticker):
         # Calculate the change and change percent
         change = abs(round(previous_close - current_price, 2))
         change_percent = calculate_change(previous_close, current_price)
-        print(f"Change: {change}, Change Percent: {change_percent}")
         return {"change": change, "changepercent": change_percent}
     # Data not available, return default values
     print(f"Data not available for ticker {ticker}")
@@ -88,7 +87,6 @@ def get_ticker_chart_for_range(ticker, _range):
 
     # Check if the data is cached and still valid
     if cache_key in cachedChartResponses and cachedChartResponses[cache_key]['timestamp'] == datetime.now().strftime("%h"):
-        print(f"Returning cached response for {ticker} - {_range}")
         return cachedChartResponses[cache_key]['data']
 
     # If not cached or cache has expired, fetch the data
@@ -119,7 +117,6 @@ def get_ticker_chart_for_range(ticker, _range):
             print("Unknown range: " + _range)
             return None
 
-    print("Interval = " + interval + " for range " + _range)
     data_dict = yfinance.Ticker(ticker).history(period=_range, interval=interval).to_dict()
 
     # Create the output data

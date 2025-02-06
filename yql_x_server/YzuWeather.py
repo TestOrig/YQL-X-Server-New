@@ -1,4 +1,5 @@
 import pytz
+import ephem
 import requests
 from datetime import datetime as dt, timezone
 from yql_x_server.Date import *
@@ -59,11 +60,11 @@ class YzuWeather(Weather):
         _key = f"{lat},{lng}"
         data = self.retrieve(_key)
         if data:
+            print("Using cached weather data")
             return data
         uri = f'http://192.168.1.228:3004/v1/forecast'
         #uri = 'https://api.open-meteo.com/v1/forecast'
         querystring = self.query_builder(lat, lng)
-        print(f"url: {uri}?{querystring}")
         response = (requests.request("GET", uri, params=querystring, timeout=15)).json()
         if response:
             for idx, hour in enumerate(response["hourly"]["time"]):
@@ -83,9 +84,7 @@ class YzuWeather(Weather):
         return None
 
     def _get_currently_weather_code(self, data, day, hour):
-        print(f"code: {data['current']['weather_code']}")
         ret = weather_icon(data["current"]["weather_code"], data["current"]["time"] < data["daily"]["sunset"][day])
-        print(f"ret: {ret}")
         if ret == -1:
             if hour != 0:
                 return self._get_weather_code_for_hour(data, hour)
@@ -103,7 +102,6 @@ class YzuWeather(Weather):
     def _get_weather_code_for_day(self, data, day):
         curr: dt = data["daily"]["time"][day]
         hour_idx =  curr.hour + self.prefix_hours + day * 24
-        print(f"day: {day}, hour_idx: {hour_idx}")
         ret = weather_icon(data["daily"]["weather_code"][day], curr < data["daily"]["sunset"][day])
         if ret == -1:
             return self._get_weather_code_for_hour(data, hour_idx-1)
@@ -116,7 +114,9 @@ class YzuWeather(Weather):
         self.sunset_today = self.data["daily"]["sunset"][0]
 
     def format_to_loc(self, data):
-        moon_info = moon_phase(0.80) # our api is missing moon data
+        moonphase = get_phase_on_day(self.current_time.year, self.current_time.month, self.current_time.day)
+        moonphase_percent = f"{int(round(moonphase * 100, 0))}%"
+        moon_info = moon_phase(moonphase)
         day_idx = self.current_time.weekday()
         hour_idx = self.current_time.hour + self.prefix_hours
         visibility = int(((data["current"].get("visibility") or 1000)) / 1000)
@@ -163,7 +163,6 @@ class YzuWeather(Weather):
             }))
 
         for idx in range(hour_idx+1, hour_idx+12):
-            print(f"Generating hour for {idx}")
             curr_time: dt = data["hourly"]["time"][idx]
             minute = str(curr_time.minute)
             poP = data["hourly"]["precipitation_probability"][idx]
@@ -177,7 +176,6 @@ class YzuWeather(Weather):
                 "temp": data["hourly"]["temperature_2m"][idx],
                 "time_24h": f"{curr_time.hour}:{minute}"
             }))
-        print(f"Formatted data: {out}")
         return out
 
     def get_days(self):
@@ -278,3 +276,23 @@ def weather_icon(_id, day):
     if _id in [27, 79, 87, 88, 89, 90]:  # Hail
         return 17
     return -1
+
+# https://stackoverflow.com/questions/2526815/moon-lunar-phase-algorithm
+def get_phase_on_day(year: int, month: int, day: int):
+  """Returns a floating-point number from 0-1. where 0=new, 0.5=full, 1=new"""
+  #Ephem stores its date numbers as floating points, which the following uses
+  #to conveniently extract the percent time between one new moon and the next
+  #This corresponds (somewhat roughly) to the phase of the moon.
+
+  #Use Year, Month, Day as arguments
+  date = ephem.Date(datetime.date(year,month,day))
+
+  nnm = ephem.next_new_moon(date)
+  pnm = ephem.previous_new_moon(date)
+
+  lunation = (date-pnm)/(nnm-pnm)
+
+  #Note that there is a ephem.Moon().phase() command, but this returns the
+  #percentage of the moon which is illuminated. This is not really what we want.
+
+  return lunation

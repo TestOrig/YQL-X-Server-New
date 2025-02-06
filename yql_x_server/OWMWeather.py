@@ -82,7 +82,6 @@ class OWMWeather(Weather):
                 "temp": data["hourly"][idx]["temp"],
                 "time_24h": f"{str(convTime.tm_hour)}:{minute}"
             }))
-        print(f"Formatted data: {out}")
         return out
 
     def get_days(self):
