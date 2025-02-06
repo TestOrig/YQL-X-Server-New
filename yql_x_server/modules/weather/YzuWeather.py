@@ -1,5 +1,4 @@
 import pytz
-import ephem
 import requests
 from datetime import datetime as dt, timezone, date
 from ..Weather import Weather
@@ -114,7 +113,7 @@ class YzuWeather(Weather):
         self.sunset_today = self.data["daily"]["sunset"][0]
 
     def format_to_loc(self, data):
-        moonphase = get_phase_on_day(self.current_time.year, self.current_time.month, self.current_time.day)
+        moonphase = get_moon_phase_for_date(self.current_time.year, self.current_time.month, self.current_time.day)
         moonphase_percent = int(round(moonphase * 100, 0))
         moon_info = moon_phase(moonphase)
         day_idx = self.current_time.weekday()
@@ -281,23 +280,3 @@ def weather_icon(_id, day):
     if _id in [27, 79, 87, 88, 89, 90]:  # Hail
         return 17
     return -1
-
-# https://stackoverflow.com/questions/2526815/moon-lunar-phase-algorithm
-def get_phase_on_day(year: int, month: int, day: int):
-  """Returns a floating-point number from 0-1. where 0=new, 0.5=full, 1=new"""
-  #Ephem stores its date numbers as floating points, which the following uses
-  #to conveniently extract the percent time between one new moon and the next
-  #This corresponds (somewhat roughly) to the phase of the moon.
-
-  #Use Year, Month, Day as arguments
-  _date = ephem.Date(date(year,month,day))
-
-  nnm = ephem.next_new_moon(_date)
-  pnm = ephem.previous_new_moon(_date)
-
-  lunation = (_date-pnm)/(nnm-pnm)
-
-  #Note that there is a ephem.Moon().phase() command, but this returns the
-  #percentage of the moon which is illuminated. This is not really what we want.
-
-  return lunation

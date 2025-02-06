@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
+import ephem
 
 def moon_phase(phase):
     # New Moon
@@ -78,3 +79,23 @@ def format_timezone(timezone_offset):
     offset = now.strftime("%z")
     hours = int(offset[:3])
     return f"GMT{hours}" if hours < 0 else f"GMT+{hours}"
+
+# https://stackoverflow.com/questions/2526815/moon-lunar-phase-algorithm
+def get_moon_phase_for_date(year: int, month: int, day: int):
+  """Returns a floating-point number from 0-1. where 0=new, 0.5=full, 1=new"""
+  #Ephem stores its date numbers as floating points, which the following uses
+  #to conveniently extract the percent time between one new moon and the next
+  #This corresponds (somewhat roughly) to the phase of the moon.
+
+  #Use Year, Month, Day as arguments
+  _date = ephem.Date(date(year,month,day))
+
+  nnm = ephem.next_new_moon(_date)
+  pnm = ephem.previous_new_moon(_date)
+
+  lunation = (_date-pnm)/(nnm-pnm)
+
+  #Note that there is a ephem.Moon().phase() command, but this returns the
+  #percentage of the moon which is illuminated. This is not really what we want.
+
+  return lunation

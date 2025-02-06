@@ -29,6 +29,13 @@ class SearchLocation:
         self.country_alpha3 = metadata['iso']
 
 class Location:
+    @classmethod
+    def from_dict(cls, d):
+        _self = cls.__new__(cls)
+        for k,v in d.items():
+            setattr(_self, k, v)
+        return _self
+
     def __init__(self, yql: YQL, latlong=None, city_name=None, woeid=None, lang=None, raw_woeid=None):
         if not any([latlong, city_name, woeid]):
             raise ValueError("At least one of latlong, city_name, or woeid must be provided.")
