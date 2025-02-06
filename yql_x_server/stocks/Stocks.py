@@ -136,6 +136,7 @@ class Symbol:
         if symbol['noopen']:
             self.incomplete = True
             self.news_count = 0
+            self.news = []
         
         if not self.incomplete:
             if len(symbol['longName']) > 12:

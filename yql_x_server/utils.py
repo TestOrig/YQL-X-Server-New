@@ -156,9 +156,16 @@ def parse_query(q, legacy=False):
         result['lon'] = re.search(r'lon=(-?\d+\.\d+)', q).group(1)
         result['type'] = "weather/latlon"
     elif "woeid" in q:
-        result['woeids'] = list(set(re.findall(r'woeid=(\d+)', q)))
+        woeids = []
+        for woeid in re.findall(r'woeid=(\d+)', q):
+            if not woeid in woeids:
+                woeids.append(woeid)
+        result['woeids'] = woeids
         if not result['woeids']:
-            result['woeids'] = list(set(re.findall(r'woeid.*?(\d+)', q)))
+            for woeid in re.findall(r'woeid.*?(\d+)', q):
+                if not woeid in woeids:
+                    woeids.append(woeid)
+            result['woeids'] = woeids
         result['type'] = "weather/woeid"
     result['lang'] = re.search(r"lang='([^']+)'", q).group(1)
     print(f"Parsing query: {q}, result: {result}")

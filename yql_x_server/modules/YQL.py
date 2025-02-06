@@ -21,7 +21,7 @@ class YQL:
     def get_metadata_error(self, woeid):
         name = get_gen_name_for_woeid(woeid)
         return {
-            "woeid": woeid,
+            "id": woeid,
             "name": name,
             "iso": "UNKN",
             "state": ""
