@@ -4,7 +4,7 @@ from pathlib import Path
 import redis
 from jinja2 import Environment, FileSystemLoader
 from .stocks.StocksQParser import parseStocksXML
-from .modules.YQL import YQL
+from .modules.YQL import get_similar_name, get_metadata_for_woeid
 from .modules.Location import Location, SearchLocation
 from .args import module_dir, args
 from .stocks.Stocks import Symbol, get_ticker_chart_for_range, get_ticker_info
@@ -44,7 +44,7 @@ def get_weather_from_redis(_id):
             return Location.from_dict(weather)
     return None
 
-def weather_results_factory(q, yql: YQL, latlong_in_query=False):
+def weather_results_factory(q, latlong_in_query=False):
     _id = None
 
     if ("limit 1" in q and latlong_in_query) or latlong_in_query:
@@ -54,7 +54,7 @@ def weather_results_factory(q, yql: YQL, latlong_in_query=False):
             if weather:
                 return [weather]
 
-        location = Location(yql, latlong=(q['lat'], q['lon']), lang=q['lang'])
+        location = Location(latlong=(q['lat'], q['lon']), lang=q['lang'])
         return [store_location_in_redis(_id, location)]
     if "limit 1" in q:
         if redis_conn:
@@ -62,8 +62,8 @@ def weather_results_factory(q, yql: YQL, latlong_in_query=False):
             weather = get_weather_from_redis(_id)
             if weather:
                 return [weather]
-        metadata = yql.get_metadata_for_woeid(q['woeids'][0])
-        location = Location(yql, metadata=metadata, lang=q['lang'])
+        metadata = get_metadata_for_woeid(q['woeids'][0])
+        location = Location(metadata=metadata, lang=q['lang'])
         return [store_location_in_redis(_id, location)]
 
     results = []
@@ -77,17 +77,17 @@ def weather_results_factory(q, yql: YQL, latlong_in_query=False):
             results.append(weather)
             continue
 
-        metadata = yql.get_metadata_for_woeid(woeid)
-        location = Location(yql, metadata=metadata, lang=q['lang'])
+        metadata = get_metadata_for_woeid(woeid)
+        location = Location(metadata=metadata, lang=q['lang'])
         results.append(store_location_in_redis(_id, location))
     return results
 
-def search_results_factory(q, yql: YQL, legacy=False):
+def search_results_factory(q, legacy=False):
     results = []
     if legacy:
-        similar_results = yql.get_similar_name(q[0], q[1])
+        similar_results = get_similar_name(q[0], q[1])
     else:
-        similar_results = yql.get_similar_name(q['term'], q['lang'])
+        similar_results = get_similar_name(q['term'], q['lang'])
     for similar_result in similar_results:
         results.append(SearchLocation(similar_result, legacy=legacy))
     return results
@@ -148,13 +148,13 @@ def xml_stocks_factory_dgw(q, req_type):
             return "Invalid request type"
     return format_xml(xml)
 
-def xml_weather_factory_yql(q: dict, yql: YQL):
+def xml_weather_factory_yql(q: dict):
     if q['type'] == "search":
         xml = modern_weather_search_template.render({
-            "results": search_results_factory(q, yql)
+            "results": search_results_factory(q)
         })
     elif "weather" in q['type']:
-        res = weather_results_factory(q, yql, "latlon" in q['type'])
+        res = weather_results_factory(q, "latlon" in q['type'])
         xml = modern_weather_template.render({
             "results": res,
             "advert_link": args.advert_link,
@@ -166,15 +166,15 @@ def xml_weather_factory_yql(q: dict, yql: YQL):
     return format_xml(xml)
 
 # DGW is inherently legacy
-def xml_weather_factory_dgw(q: str, yql: YQL, search=False):
+def xml_weather_factory_dgw(q: str, search=False):
     if search:
         xml = legacy_weather_search_template.render({
-            "results": search_results_factory(q, yql)
+            "results": search_results_factory(q)
         })
     else:
         # It's regular weather
         xml = legacy_weather_template.render({
-            "results": weather_results_factory(q, yql),
+            "results": weather_results_factory(q),
             "advert_link": args.advert_link,
         })
     return format_xml(xml)

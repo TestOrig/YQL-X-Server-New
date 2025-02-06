@@ -10,7 +10,6 @@ import sentry_sdk
 from starlette_context.middleware import RawContextMiddleware
 from starlette_context import context
 
-from .modules.YQL import YQL
 from . import XMLFactory
 from .args import args
 from .utils import parse_query
@@ -26,8 +25,6 @@ if not os.path.exists(genPath):
     with open(genPath, "w", encoding="utf-8") as database:
         database.write(json.dumps({}))
         database.close()
-
-yql = YQL()
 
 class XMLResponse(Response):
     media_type = "application/xml"
@@ -51,10 +48,10 @@ async def dgw(request: Request):
         req_type = root[0].attrib['type']
         if req_type == "getlocationid":
             q = parse_query(root, legacy=True)
-            return XMLFactory.xml_weather_factory_dgw(q, yql, search=True)
+            return XMLFactory.xml_weather_factory_dgw(q, search=True)
         if req_type == "getforecastbylocationid":
             q = parse_query(root, legacy=True)
-            return XMLFactory.xml_weather_factory_dgw(q, yql)
+            return XMLFactory.xml_weather_factory_dgw(q)
     return Response("Invalid Request", status_code=400)
 
 @yql_router.get('/v1/yql')
@@ -70,7 +67,7 @@ async def weather_endpoint(request: Request):
     q = request.query_params.get('q')
     if q and q.startswith("select"):
         q = parse_query(q)
-        return XMLFactory.xml_weather_factory_yql(q, yql)
+        return XMLFactory.xml_weather_factory_yql(q)
     return Response("Invalid Request", status_code=400)
 
 @app.middleware("http")

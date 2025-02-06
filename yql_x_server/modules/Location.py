@@ -2,7 +2,7 @@ from xml.sax.saxutils import escape
 from iso3166 import countries
 from .Weather import get_weather
 from .Geocoder import Geocoder, get_city
-from .YQL import YQL
+from .YQL import get_metadata_for_woeid, get_woeid_from_name
 
 class Country:
     def __init__(self, name, alpha3):
@@ -36,7 +36,7 @@ class Location:
             setattr(_self, k, v)
         return _self
 
-    def __init__(self, yql: YQL, latlong=None, metadata=None, lang=None, raw_woeid=None):
+    def __init__(self, latlong=None, metadata=None, lang=None, raw_woeid=None):
         if not latlong and not metadata:
             raise ValueError("At least one of latlong or metadata must be provided.")
 
@@ -56,8 +56,8 @@ class Location:
             self.latitude, self.longitude = latlong
             location = geocoder.reverse_geocode(self.latitude, self.longitude)
             self.city = get_city(location)
-            self.woeid = location.get("woeid") or yql.get_woeid_from_name(self.city, lang=lang)
-            self.metadata = yql.get_metadata_for_woeid(self.woeid)
+            self.woeid = location.get("woeid") or get_woeid_from_name(self.city, lang=lang)
+            self.metadata = get_metadata_for_woeid(self.woeid)
             self.country_alpha3 = self.metadata['iso']
             self.lang = lang
         else:

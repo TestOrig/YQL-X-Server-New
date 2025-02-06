@@ -57,10 +57,6 @@ class YzuWeather(Weather):
 
     def get_weather_dict(self, lat, lng):
         _key = f"{lat},{lng}"
-        data = self.retrieve(_key)
-        if data:
-            print("Using cached weather data")
-            return data
         uri = args.yzugeo_weather_server
         #uri = 'https://api.open-meteo.com/v1/forecast'
         querystring = self.query_builder(lat, lng)
@@ -77,7 +73,6 @@ class YzuWeather(Weather):
             response["current"]["time"] = self._normalize_time(response["current"]["time"], response)
             self.fill_self(response)
             out = self.format_to_loc(response)
-            self.store(out, _key)
             return out
         # TODO, None handling lmao
         return None

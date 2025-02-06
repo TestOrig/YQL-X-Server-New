@@ -6,11 +6,6 @@ from ...utils import format_time_str, format_timezone, format_poP, moon_phase, d
 
 class OWMWeather(Weather):
     def get_weather_dict(self, lat, lng):
-        _key = f"{lat},{lng}"
-        data = self.retrieve(_key)
-        if data:
-            return data
-
         uri = 'https://api.openweathermap.org/data/3.0/onecall'
         querystring = {
             "lat": lat, "lon": lng,
@@ -21,7 +16,6 @@ class OWMWeather(Weather):
         response = (requests.request("GET", uri, params=querystring, timeout=5)).json()
         if response and "cod" not in response:
             out = self.format_to_loc(response)
-            self.store(out, _key)
             return out
         # TODO, None handling lmao
         return None

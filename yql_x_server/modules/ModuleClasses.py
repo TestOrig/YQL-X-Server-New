@@ -18,14 +18,6 @@ class Weather:
         self.hours = []
         self.available_providers = providers
 
-    def store(self, data, key):
-        # empty for now, until we add redis
-        pass
-
-    def retrieve(self, key):
-        # empty for now, until we add redis
-        pass
-
     def get_weather_dict(self, lat, lng):
         pass # This method should return a dict containing the following as an example.
         # {
@@ -66,5 +58,69 @@ class Weather:
         #     "wind_chill": 25.0,
         #     "wind_deg": 180,
         #     "wind_speed": 5.0
-        # } consider using store and retrieve at the start and end of this method
+        # }
 
+class YQL:
+    def __init__(self, providers=[]):
+        self.available_providers = providers
+    
+    def get_woeid_from_name(self, name, lang):
+        """
+        This method should return a WOEID for the given name to the best of its ability.
+        """
+        for provider in self.available_providers:
+            try:
+                woeid = provider().get_woeid_from_name(name, lang)
+                print(f"Utilizing WOEID from provider: {provider.__name__}")
+                return woeid
+            except Exception as e:
+                print(f"Error getting WOEID from {provider.__name__}: {e}")
+                if self.available_providers.index(provider) == len(self.available_providers) - 1:
+                    raise e
+                continue
+        return None
+    
+    def get_metadata_for_woeid(self, woeid):
+        """
+        This method should return a dict in the form of:
+        {
+            "id": woeid,
+            "name": NAME,
+            "iso": "ISO",
+            "state": "STATE"
+        }
+        """
+        for provider in self.available_providers:
+            try:
+                metadata = provider().get_metadata_for_woeid(woeid)
+                print(f"Utilizing metadata from provider: {provider.__name__}")
+                return metadata
+            except Exception as e:
+                print(f"Error getting metadata from {provider.__name__}: {e}")
+                if self.available_providers.index(provider) == len(self.available_providers) - 1:
+                    raise e
+                continue
+        return None
+    
+    def get_similar_name(self, name, lang):
+        """
+        This method should return a list in the format of:
+        [
+            {
+                "name": NAME,
+                "woeid": WOEID,
+                "iso": "ISO"
+            }
+        ]
+        """
+        for provider in self.available_providers:
+            try:
+                similar_names = provider().get_similar_name(name, lang)
+                print(f"Utilizing similar names from provider: {provider.__name__}")
+                return similar_names
+            except Exception as e:
+                print(f"Error getting similar names from {provider.__name__}: {e}")
+                if self.available_providers.index(provider) == len(self.available_providers) - 1:
+                    raise e
+                continue
+        return None
