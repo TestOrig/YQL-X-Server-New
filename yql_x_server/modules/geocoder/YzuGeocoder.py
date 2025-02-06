@@ -13,7 +13,7 @@ class YzuGeocoder:
             'User-Agent': 'YQL-X-Server',
             'X-Forwarded-For': context['client'].host
         }
-        response = requests.get(url, headers=headers, timeout=5)
+        response = requests.get(url, headers=headers)
         if not response.ok:
             return None, None
         data = response.json()
@@ -27,7 +27,7 @@ class YzuGeocoder:
             'User-Agent': 'YQL-X-Server',
             'X-Forwarded-For': context['client'].host
         }
-        response = requests.get(url, headers=headers, timeout=5)
+        response = requests.get(url, headers=headers)
         if not response.ok:
             return None
         res = response.json()
