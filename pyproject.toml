@@ -31,3 +31,6 @@ name = "yql-x-server"
 version = "0.1.0"
 description = ""
 readme = "README.md"
+
+[project.scripts]
+server = "yql_x_server:server"
