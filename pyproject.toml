@@ -33,4 +33,4 @@ description = ""
 readme = "README.md"
 
 [project.scripts]
-server = "yql_x_server:server"
+server = "yql_x_server.server:start"
