@@ -7,14 +7,13 @@ build-backend = "pdm.backend"
 
 [project]
 authors = [
-    {name = "electimon", email = "electimon@gmail.com"},
+    {name = "electimon", email = "electi@yzu.moe"},
 ]
 requires-python = "<4.0,>=3.10"
 dependencies = [
     "iso3166",
     "geopy",
     "jinja2",
-    "cachetools",
     "requests",
     "yfinance",
     "feedparser",
