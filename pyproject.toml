@@ -26,6 +26,7 @@ dependencies = [
     "pytz>=2024.2",
     "pyephem>=9.99",
     "redis[hiredis]>=5.2.1",
+    "prometheus-fastapi-instrumentator>=7.0.2",
 ]
 name = "yql-x-server"
 version = "0.1.0"

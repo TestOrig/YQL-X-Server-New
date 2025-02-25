@@ -9,6 +9,7 @@ import sentry_sdk
 
 from starlette_context.middleware import RawContextMiddleware
 from starlette_context import context
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from . import XMLFactory
 from .args import args
@@ -16,6 +17,7 @@ from .utils import parse_query
 
 app = FastAPI()
 sys.stdout.reconfigure(encoding='utf-8')
+instrumentator = Instrumentator().instrument(app)
 
 if args.sentry_url:
     sentry_sdk.init(args.sentry_url)
@@ -43,7 +45,7 @@ async def dgw(request: Request):
     api = root.attrib['api']
     if api == "finance":
         req_type = root[0].attrib['type']
-        return XMLFactory.xml_stocks_factory_dgw(root, req_type)
+#        return XMLFactory.xml_stocks_factory_dgw(root, req_type)
     if api == 'weather':
         req_type = root[0].attrib['type']
         if req_type == "getlocationid":
@@ -78,6 +80,10 @@ def add_context(request: Request, call_next):
 app.include_router(yql_router)
 app.include_router(dgw_router)
 app.add_middleware(RawContextMiddleware)
+
+@app.on_event("startup")
+async def _startup():
+    instrumentator.expose(app)
 
 def start():
     uvicorn.run(
