@@ -1,8 +1,10 @@
 from .ModuleClasses import YQL
 from .yql.YzuGeo import YzuGeoYQL
+from .yql.YzuGeoNew import YzuGeoNewYQL
 
 available_providers = [
-    YzuGeoYQL,
+    YzuGeoNewYQL,
+    YzuGeoYQL
 ]
 
 def get_woeid_from_name(name, lang):
