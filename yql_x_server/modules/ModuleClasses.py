@@ -63,7 +63,7 @@ class Weather:
 class YQL:
     def __init__(self, providers=[]):
         self.available_providers = providers
-    
+
     def get_woeid_from_name(self, name, lang):
         """
         This method should return a WOEID for the given name to the best of its ability.
@@ -79,7 +79,7 @@ class YQL:
                     raise e
                 continue
         return None
-    
+
     def get_metadata_for_woeid(self, woeid):
         """
         This method should return a dict in the form of:
@@ -93,15 +93,17 @@ class YQL:
         for provider in self.available_providers:
             try:
                 metadata = provider().get_metadata_for_woeid(woeid)
-                print(f"Utilizing metadata from provider: {provider.__name__}")
-                return metadata
+                if metadata:
+                    print(f"Utilizing metadata from provider: {provider.__name__}")
+                    return metadata
             except Exception as e:
                 print(f"Error getting metadata from {provider.__name__}: {e}")
                 if self.available_providers.index(provider) == len(self.available_providers) - 1:
                     raise e
                 continue
+        print(f"No provider can get metadata for {woeid}")
         return None
-    
+
     def get_similar_name(self, name, lang):
         """
         This method should return a list in the format of:
@@ -116,11 +118,13 @@ class YQL:
         for provider in self.available_providers:
             try:
                 similar_names = provider().get_similar_name(name, lang)
-                print(f"Utilizing similar names from provider: {provider.__name__}")
-                return similar_names
+                if similar_names:
+                    print(f"Utilizing similar names from provider: {provider.__name__}")
+                    return similar_names
             except Exception as e:
                 print(f"Error getting similar names from {provider.__name__}: {e}")
                 if self.available_providers.index(provider) == len(self.available_providers) - 1:
                     raise e
                 continue
+        print(f"No provider can get similar names for {name} with lang: {lang}")
         return None

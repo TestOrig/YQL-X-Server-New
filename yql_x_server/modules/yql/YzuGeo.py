@@ -34,7 +34,7 @@ class YzuGeoYQL(YQL):
             'User-Agent': 'YQL-X-Server',
             'X-Forwarded-For': context['client'].host
         }
-        r = requests.get(args.yzugeo_server + "/id/" + str(woeid), headers=headers)
+        r = requests.get(args.yzugeo_server + "/id/" + str(woeid), headers=headers, timeout=1)
         if r.status_code != 200:
             print(f"Failed to get metadata for {woeid}, yzugeo returned {r.status_code}")
             return self.get_metadata_error(woeid)

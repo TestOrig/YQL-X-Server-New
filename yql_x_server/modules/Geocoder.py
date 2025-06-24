@@ -13,12 +13,13 @@ class Geocoder:
     def __init__(self):
         self.geocoders = [
             YzuGeocoder(),
-            Nominatim(user_agent="iOSLegacyWeather", timeout=10),
+            Nominatim(user_agent="iOSLegacyWeather", timeout=2),
             GeoNames("electimon")
         ]
 
     def geocode(self, city, country=None):
         for geocoder in self.geocoders:
+            print(f"Trying geocoder: {geocoder} for {city} with country: {country}")
             try:
                 args = inspect.signature(geocoder.geocode).parameters
                 if "country_codes" in args:
@@ -33,6 +34,7 @@ class Geocoder:
 
     def reverse_geocode(self, lat, long):
         for geocoder in self.geocoders:
+            print(f"Trying reverse geocoder: {geocoder} for lat,lng pair: {lat},{long}")
             try:
                 location = geocoder.reverse((lat, long)).raw
                 return location
