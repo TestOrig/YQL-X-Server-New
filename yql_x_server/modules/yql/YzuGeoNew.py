@@ -1,3 +1,4 @@
+import json
 import requests
 from langcodes import Language
 from starlette_context import context
@@ -7,8 +8,7 @@ from ..ModuleClasses import YQL
 class YzuGeoNewYQL(YQL):
     def get_woeid_from_name(self, name, lang):
         if not name:
-            print("Name is empty")
-            return "000000"
+            raise ValueError("Name is empty")
         print("Getting woeid from name, " + name)
         result = self.get_similar_name(name, lang)
         if result:
@@ -22,6 +22,15 @@ class YzuGeoNewYQL(YQL):
         if not data:
             raise ValueError(f"No metadata found for WOEID: {woeid}")
 
+        names = data.get("names", {})
+        if names and len(names) > 1:
+            name = data.get("name", "")
+        else:
+            # this is the case when the request is made specifying lang in the params
+            name = next(iter(names.values()), data.get("name", [""]))[0]
+        if not name:
+            raise ValueError(f"No name found for WOEID: {woeid}")
+
         iso = data.get("abbr", "UNKN")
         if iso == "UNKN":
             lineage = data.get("lineage", [])
@@ -33,13 +42,13 @@ class YzuGeoNewYQL(YQL):
 
         return {
             "id": woeid,
-            "name": data.get("name", ""),
+            "name": name,
             "iso": iso,
             "state": ""
         }
 
 
-    def get_metadata_for_woeid(self, woeid):
+    def get_metadata_for_woeid(self, woeid, lang=None):
         """
         This method should return a dict in the form of:
         {
@@ -54,7 +63,8 @@ class YzuGeoNewYQL(YQL):
             'User-Agent': 'YQL-X-Server',
             'X-Forwarded-For': context['client'].host
         }
-        url = args.yzugeo_server + f"/lookup/id?ids={str(woeid)}"
+        lang_param = f"{Language.get(lang).to_alpha3()}" if lang else ""
+        url = args.yzugeo_server + f"/lookup/id?ids={str(woeid)}&lang={lang_param}"
         r = requests.get(url, headers=headers)
         print(f"Requesting metadata for {woeid}, URL: {url}")
         if r.status_code != 200:

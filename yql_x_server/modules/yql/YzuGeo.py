@@ -28,7 +28,7 @@ class YzuGeoYQL(YQL):
             "state": ""
         }
 
-    def get_metadata_for_woeid(self, woeid):
+    def get_metadata_for_woeid(self, woeid, lang=None):
         metadata = {}
         headers = {
             'User-Agent': 'YQL-X-Server',
@@ -51,7 +51,6 @@ class YzuGeoYQL(YQL):
             "query": name,
             "limit": 10,
             "alt_response": True,
-            "place_type_id": [12, 8, 7, 22, 9],
             "language": Language.get(lang).to_alpha3().upper()
         }
         headers = {
@@ -66,7 +65,6 @@ class YzuGeoYQL(YQL):
         if r.status_code != 200 or "No results found" in r.text:
             print(f"Failed to get similar name for {name}, yzugeo returned {r.status_code}")
             return []
-        _results = r.json()
-        results = [_results[key] for key in _results]
+        results = r.json()
         print(f"Got similar name for {name}: {results}, len {len(results)}")
         return results

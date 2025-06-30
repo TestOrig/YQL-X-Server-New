@@ -62,7 +62,7 @@ def weather_results_factory(q, latlong_in_query=False):
             weather = get_weather_from_redis(_id)
             if weather:
                 return [weather]
-        metadata = get_metadata_for_woeid(q['woeids'][0])
+        metadata = get_metadata_for_woeid(q['woeids'][0], lang=q['lang'])
         location = Location(metadata=metadata, lang=q['lang'])
         return [store_location_in_redis(_id, location)]
 
@@ -77,7 +77,7 @@ def weather_results_factory(q, latlong_in_query=False):
             results.append(weather)
             continue
 
-        metadata = get_metadata_for_woeid(woeid)
+        metadata = get_metadata_for_woeid(woeid, lang=q['lang'])
         location = Location(metadata=metadata, lang=q['lang'])
         results.append(store_location_in_redis(_id, location))
     return results

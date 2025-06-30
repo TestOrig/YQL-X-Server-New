@@ -78,9 +78,9 @@ class YQL:
                 if self.available_providers.index(provider) == len(self.available_providers) - 1:
                     raise e
                 continue
-        return None
+        return -1
 
-    def get_metadata_for_woeid(self, woeid):
+    def get_metadata_for_woeid(self, woeid, lang=None):
         """
         This method should return a dict in the form of:
         {
@@ -92,7 +92,7 @@ class YQL:
         """
         for provider in self.available_providers:
             try:
-                metadata = provider().get_metadata_for_woeid(woeid)
+                metadata = provider().get_metadata_for_woeid(woeid, lang)
                 if metadata:
                     print(f"Utilizing metadata from provider: {provider.__name__}")
                     return metadata
@@ -102,7 +102,7 @@ class YQL:
                     raise e
                 continue
         print(f"No provider can get metadata for {woeid}")
-        return None
+        return {}
 
     def get_similar_name(self, name, lang):
         """
@@ -127,4 +127,4 @@ class YQL:
                     raise e
                 continue
         print(f"No provider can get similar names for {name} with lang: {lang}")
-        return None
+        return []

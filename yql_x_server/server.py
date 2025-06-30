@@ -5,7 +5,6 @@ from pathlib import Path
 from xml.etree import ElementTree
 from fastapi import FastAPI, APIRouter, Response, Request
 import uvicorn
-import sentry_sdk
 
 from starlette_context.middleware import RawContextMiddleware
 from starlette_context import context
@@ -20,6 +19,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 instrumentator = Instrumentator().instrument(app)
 
 if args.sentry_url:
+    import sentry_sdk
     sentry_sdk.init(args.sentry_url)
 
 genPath = Path(args.generated_woeids_path)
