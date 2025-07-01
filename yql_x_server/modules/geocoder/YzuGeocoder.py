@@ -14,7 +14,8 @@ class YzuGeocoder:
             'X-Forwarded-For': context['client'].host
         }
         response = requests.get(url, headers=headers, timeout=1)
-        if not response.ok:
+        if not response.status_code == 200:
+            print(f"YzuGeocoder request failed!, tried {url}")
             return None, None
         data = response.json()
         loc = Location("", (data['lat'], data['lon']), data)

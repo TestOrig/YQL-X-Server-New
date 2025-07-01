@@ -1,5 +1,6 @@
 import inspect
 from geopy.geocoders import Nominatim, GeoNames
+from geopy.location import Location
 from .geocoder.YzuGeocoder import YzuGeocoder
 from .geocoder.YzuGeocoderNew import YzuGeocoderNew
 
@@ -27,8 +28,10 @@ class Geocoder:
                     location = geocoder.geocode(city, country_codes=[country])
                 else:
                     location = geocoder.geocode(city, country=country)
-                if location:
+                if location and isinstance(location, Location):
                     return location.latitude, location.longitude
+                else:
+                    print(f"Failed to geocode {city} with {geocoder}, Got: {location}")
             except Exception as e:
                 print(f"Failed to geocode {city} with {geocoder}, Error: {e}")
         return None, None
