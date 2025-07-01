@@ -1,9 +1,7 @@
 from .ModuleClasses import YQL
 from .yql.YzuGeo import YzuGeoYQL
-from .yql.YzuGeoNew import YzuGeoNewYQL
 
 available_providers = [
-    YzuGeoNewYQL,
     YzuGeoYQL
 ]
 
