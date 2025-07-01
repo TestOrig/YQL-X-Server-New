@@ -45,7 +45,7 @@ async def dgw(request: Request):
     api = root.attrib['api']
     if api == "finance":
         req_type = root[0].attrib['type']
-#        return XMLFactory.xml_stocks_factory_dgw(root, req_type)
+        return XMLFactory.xml_stocks_factory_dgw(root, req_type)
     if api == 'weather':
         req_type = root[0].attrib['type']
         if req_type == "getlocationid":
