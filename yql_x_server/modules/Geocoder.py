@@ -13,7 +13,6 @@ class Geocoder:
 
     def __init__(self):
         self.geocoders = [
-            YzuGeocoderNew(),
             YzuGeocoder(),
             Nominatim(user_agent="iOSLegacyWeather", timeout=2),
             GeoNames("electimon")
