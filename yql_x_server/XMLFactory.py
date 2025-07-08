@@ -67,10 +67,7 @@ def weather_results_factory(q, latlong_in_query=False):
         return [store_location_in_redis(_id, location)]
 
     results = []
-    for woeid in q['woeids']:
-        if not "raw_woeids" in q:
-            q['raw_woeids'] = q['woeids']
-
+    for idx, woeid in enumerate(q['woeids']):
         _id = abs(hash(woeid))
         weather = get_weather_from_redis(_id)
         if weather:
@@ -78,7 +75,10 @@ def weather_results_factory(q, latlong_in_query=False):
             continue
 
         metadata = get_metadata_for_woeid(woeid, lang=q['lang'])
-        location = Location(metadata=metadata, lang=q['lang'])
+        if q.get('raw_woeids'):
+            location = Location(metadata=metadata, lang=q['lang'], raw_woeid=q['raw_woeids'][idx])
+        else:
+            location = Location(metadata=metadata, lang=q['lang'])
         results.append(store_location_in_redis(_id, location))
     return results
 
