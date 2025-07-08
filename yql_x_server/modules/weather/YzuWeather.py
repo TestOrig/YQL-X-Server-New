@@ -194,8 +194,8 @@ class YzuWeather(Weather):
 # 5 = rain&snow
 # 6 = rain&snow
 # 7 = rain&snow
-# 8 = less than normal sized cloud with rain
-# 9 = less than normal sized cloud with rain
+# 8 = less than normal sized cloud with rain cloudrain
+# 9 = less than normal sized cloud with rain cloudrain
 # 10 = poppy circular hail? and frozen
 # 11 = rain with no clouds
 # 12 = rain with no clouds
@@ -269,7 +269,7 @@ def weather_icon(_id, day):
     if _id in [2]:  # Few clouds
         return 34 if day else 33
     if _id in [3]:  # Scattered clouds
-        return 27 if day else 26
+        return 30 if day else 26
     if _id in [13, 14, 15, 16]:  # Broken clouds
         return 27
     if _id in [18]:  # Windy
