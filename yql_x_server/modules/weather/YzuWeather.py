@@ -44,7 +44,8 @@ class YzuWeather(Weather):
                 "wind_speed_10m",
                 "weather_code",
                 "relative_humidity_2m",
-                "visibility"
+                "visibility",
+                "is_day"
             ]),
             "timeformat": "unixtime",
             "timezone": "auto",
@@ -78,7 +79,7 @@ class YzuWeather(Weather):
         return None
 
     def _get_currently_weather_code(self, data, day, hour):
-        ret = weather_icon(data["current"]["weather_code"], data["current"]["time"] < data["daily"]["sunset"][day])
+        ret = weather_icon(data["current"]["weather_code"], self.is_day == 1)
         if ret == -1:
             if hour != 0:
                 return self._get_weather_code_for_hour(data, hour)
@@ -106,6 +107,7 @@ class YzuWeather(Weather):
         self.current_time = self.data["current"]["time"]
         self.sunrise_today = self.data["daily"]["sunrise"][0]
         self.sunset_today = self.data["daily"]["sunset"][0]
+        self.is_day = self.data["current"]["is_day"]
 
     def format_to_loc(self, data):
         moonphase = get_moon_phase_for_date(self.current_time.year, self.current_time.month, self.current_time.day)
